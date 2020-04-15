@@ -5,9 +5,9 @@
 #SBATCH -A robinson
 #SBATCH -p batch            	                            # partition (this is the queue your job will be added to)
 #SBATCH -N 1                                                # number of nodes (due to the nature of sequential processing, here uses single node)
-#SBATCH -n 2                                                # number of cores (here uses 2)
-#SBATCH --time=08:00:00                                     # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=8G                                            # memory pool for all cores (here set to 8 GB)
+#SBATCH -n 4                                                # number of cores (here uses 2)
+#SBATCH --time=04:00:00                                     # time allocation, which has the format (D-HH:MM)
+#SBATCH --mem=16G                                            # memory pool for all cores (here set to 8 GB)
 
 # Notification configuration
 #SBATCH --mail-type=END					    # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
@@ -95,8 +95,9 @@ fi
 module load Java/10.0.1
 
 #Do the thing
-java -Xmx4G -jar $PICARD \
+java -Xmx16G -jar $PICARD RevertSam \
 I=$bamFile \
 O=$outDir/$sampleID.u.bam \
-MAX_RECORDS_IN_RAM=4000000 \
-VALIDATION_STRINGENCY=LENIENT
+MAX_RECORDS_IN_RAM=10000000 \
+VALIDATION_STRINGENCY=LENIENT \
+TMP_DIR=$outDir/tmp.$SLURM_JOB_ID
