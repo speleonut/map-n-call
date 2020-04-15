@@ -96,7 +96,7 @@ module load Java/10.0.1
 
 #Do the thing
 java -Xmx4G -jar $PICARD \
--I=$bamFile \
--O=$outDir/$sampleID.u.bam \
---MAX_RECORDS_IN_RAM=4000000 \
---VALIDATION_STRINGENCY=LENIENT
+I=$bamFile \
+O=$outDir/$sampleID.u.bam \
+MAX_RECORDS_IN_RAM=4000000 \
+VALIDATION_STRINGENCY=LENIENT
