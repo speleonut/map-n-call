@@ -6,7 +6,7 @@
 #SBATCH -p batch            	                            # partition (this is the queue your job will be added to)
 #SBATCH -N 1                                                # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 4                                                # number of cores (here uses 2)
-#SBATCH --time=04:00:00                                     # time allocation, which has the format (D-HH:MM)
+#SBATCH --time=08:00:00                                     # time allocation, which has the format (D-HH:MM)
 #SBATCH --mem=16G                                            # memory pool for all cores (here set to 8 GB)
 
 # Notification configuration

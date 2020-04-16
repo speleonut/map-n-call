@@ -6,7 +6,7 @@
 #SBATCH -p batch                        # partition (this is the queue your job will be added to)
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 8                            # number of cores (here uses 8)
-#SBATCH --time=08:00:00                 # time allocation, which has the format (D-HH:MM)
+#SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
 #SBATCH --mem=32G                       # memory pool for all cores (here set to 32 GB)
 
 # Notification configuration
@@ -87,11 +87,11 @@ if [ -z "$outDir" ]; then # If output directory not specified then make one up
     echo "#INFO: You didn't specify an output directory so I'm going to put your files here.
     $outDir"
 fi
-if [ ! -d $outDir ]; then
+if [ ! -d "$outDir" ]; then
     mkdir -p $outDir
 fi
 tmpDir=$outDir/tmp.$sampleID
-if [ ! -d $tmpDir ]; then
+if [ ! -d "$tmpDir" ]; then
     mkdir -p $tmpDir
 fi
 
@@ -99,4 +99,4 @@ fi
 module load SAMtools
 
 samtools sort -l 0 -m 4G -n -@8 -T$tmpDir $bamFile |\
-samtools fastq -1 $sampleID.reads_R1.fastq.gz -2 $sampleID.reads_R2.fastq.gz -0 /dev/null -s sampleID.reads_U1.fastq.gz -n -@8 -
+samtools fastq -1 $outDir/$sampleID.reads_R1.fastq.gz -2 $outDir/$sampleID.reads_R2.fastq.gz -0 /dev/null -s $outDir/$sampleID.reads_U1.fastq.gz -n -@8 -

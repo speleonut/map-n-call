@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J printReads
-#SBATCH -o /fast/users/%u/launch/slurm-%j.out
+#SBATCH -o /fast/users/%u/log/printReads-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
@@ -15,15 +15,7 @@
 #SBATCH --mail-type=FAIL                                        
 #SBATCH --mail-user=%u@adelaide.edu.au
 
-# load modules
-module load Java/1.8.0_121
-### module load GATK 3.7
-### module load picard/2.6.0 or higher
-
-# run the executable
 # A script to map reads and then call variants using the GATK v3.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
-
-# Variables that usually don't need changing once set for your system
 
 usage()
 {
@@ -46,7 +38,7 @@ echo "# Script for processing and mapping Illumina 100bp pair-end sequence data 
 # 24/09/2015; Mark Corbett; Fork original for genomes
 # 25/09/2015; Mark Corbett; Pipe to samtools sort; Add getWGSMetrics
 # 12/10/2015; Mark Corbett; Fix error collecting .bam files to merge
-# 13/05/2016; Mark Corbett; Add option to specify sample name different from OUTPREFIX.  Make seq file search explicit for *.fastq.gz
+# 13/05/2016; Mark Corbett; Add option to specify sample name different from outPrefix.  Make seq file search explicit for *.fastq.gz
 # 01/07/2016; Mark Corbett; Improve error handling
 # 24/08/2016; Mark Corbett; Fork for HPC version, bring up to date with GATKv3.6
 # 18/11/2016; Mark Corbett; Step down number of splits for PrintReads for higher efficiency
@@ -60,16 +52,16 @@ echo "# Script for processing and mapping Illumina 100bp pair-end sequence data 
 while [ "$1" != "" ]; do
 	case $1 in
 		-c )			shift
-					CONFIG=$1
+					config=$1
 					;;
 		-p )			shift
-					OUTPREFIX=$1
+					outPrefix=$1
 					;;
 		-S )			shift
-					SAMPLE=$1
+					sample=$1
 					;;
 		-o )			shift
-					WORKDIR=$1
+					workDir=$1
 					;;
 		-h | --help )		usage
 					exit 0
@@ -79,33 +71,36 @@ while [ "$1" != "" ]; do
 	esac
 	shift
 done
-if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/data/neurogenetics/git/PhoenixScripts/shared/scripts/BWA-GATKHC.genome.cfg
+if [ -z "$config" ]; then # If no config file specified use the default
+   config=/data/neurogenetics/git/PhoenixScripts/shared/scripts/BWA-GATKHC.genome.cfg
 fi
-source $CONFIG
+source $config
 
-if [ -z "$OUTPREFIX" ]; then # If no file prefix specified then do not proceed
+if [ -z "$outPrefix" ]; then # If no file prefix specified then do not proceed
 	usage
 	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
 	exit 1
 fi
-if [ -z "$SAMPLE" ]; then # If no SAMPLE name specified then do not proceed
+if [ -z "$sample" ]; then # If no sample name specified then do not proceed
 	usage
-	echo "#ERROR: You need to specify a SAMPLE name that refers to your .bam file \$SAMPLE.marked.sort.bwa.$BUILD.bam."
+	echo "#ERROR: You need to specify a sample name that refers to your .bam file \$sample.marked.sort.bwa.$BUILD.bam."
 	exit 1
 fi
-if [ -z "$WORKDIR" ]; then # If no output directory then use current directory
-	WORKDIR=$FASTDIR/BWA-GATK/$SAMPLE
-	echo "Using $FASTDIR/BWA-GATK/$SAMPLE as the output directory"
+if [ -z "$workDir" ]; then # If no output directory then use current directory
+	workDir=$FASTDIR/BWA-GATK/$sample
+	echo "Using $FASTDIR/BWA-GATK/$sample as the output directory"
 fi
 
-tmpDir=$FASTDIR/tmp/$OUTPREFIX # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d $tmpDir ]; then
+tmpDir=$FASTDIR/tmp/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
+if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
 	
 # Define files for the array
 bedFile=($arrIndexBedFiles)
+
+# load modules
+module load Java/1.8.0_121
 
 ## Start of the script ##
  
@@ -113,8 +108,8 @@ cd $tmpDir
 java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar \
 -T PrintReads \
 -R $GATKREFPATH/$GATKINDEX \
--I ${bedFile[$SLURM_ARRAY_TASK_ID]}.$SAMPLE.realigned.bwa.$BUILD.bam \
+-I ${bedFile[$SLURM_ARRAY_TASK_ID]}.$sample.realigned.bwa.$BUILD.bam \
 -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
--BQSR $tmpDir/$SAMPLE.recal.grp \
+-BQSR $tmpDir/$sample.recal.grp \
 -rf BadCigar \
--o ${bedFile[$SLURM_ARRAY_TASK_ID]}.$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$SAMPLE.pipeline.log 2>&1
+-o ${bedFile[$SLURM_ARRAY_TASK_ID]}.$sample.realigned.recal.sorted.bwa.$BUILD.bam > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$sample.pipeline.log 2>&1
