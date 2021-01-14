@@ -41,7 +41,8 @@ echo "# bam2fq.samtools.sh Sort a BAM by read name then convert to gzipped fastq
 # History:
 # Script created by: Mark Corbett on 15/04/2020
 # email:mark dot corbett is at adelaide university
-# Modified (Date, Name, Description):
+# Modified (Date; Name; Description):
+# 15/01/2021; Mark; Update for new Phoenix and create array job option
 #
 "
 }
@@ -63,7 +64,7 @@ while [ "$1" != "" ]; do
                 ;;
         -h | --help )   module load arch/haswell
                         module load SAMtools
-						samtools sort
+                        samtools sort
                         samtools fastq
                         module unload SAMtools
                         module unload arch/haswell
@@ -84,8 +85,8 @@ done
 
 # Check that your script has everything it needs to start.
 if [ ! -z "$inputFile" ]; then
-    readarray -t bamDir < $(cut -f1 $inputFile)
-    readarray -t sampleID < $(cut -f2 $inputFile)
+    bamDir=($(awk '{print $1}' $inputFile))
+    sampleID=($(awk '{print $2}' $inputFile))
 fi	
 if [ -z "$bamDir" ]; then # If bamFile not specified then do not proceed
     usage
