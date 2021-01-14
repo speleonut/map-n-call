@@ -61,17 +61,21 @@ while [ "$1" != "" ]; do
         -i )    shift
                 inputFile=$1
                 ;;
-        -h | --help )   module load SAMtools
-                        samtools sort
+        -h | --help )   module load arch/haswell
+                        module load SAMtools
+						samtools sort
                         samtools fastq
                         module unload SAMtools
+                        module unload arch/haswell
                         usage
                         exit 0
                         ;;
-        * )     module load SAMtools
+        * )     module load arch/haswell
+                module load SAMtools
                 samtools sort
                 samtools fastq
                 module unload SAMtools
+                module unload arch/haswell
                 usage
                 exit 1
     esac
@@ -112,6 +116,7 @@ if [ ! -d "$tmpDir" ]; then
 fi
 
 # Load modules
+module load arch/haswell
 module load SAMtools
 
 # Revert BAMs to fastq
