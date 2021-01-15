@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH -J gatherVCFs
+#SBATCH -J GATKHC
 #SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
-#SBATCH -n 3
-#SBATCH --time=01:00:00
-#SBATCH --mem=12GB
+#SBATCH -n 2
+#SBATCH --time=15:00:00
+#SBATCH --mem=8GB
 
 # Notification configuration 
 #SBATCH --mail-type=END                                         
@@ -18,10 +18,9 @@
 # load modules
 module load arch/haswell
 module load Java/1.8.0_121
-module load HTSlib/1.10.2-foss-2016b
-module load SAMtools/1.10-foss-2016b
-### module load GATK 4..1.6.0
+### module load GATK 4.0.0.0
 ### module load picard/2.6.0 or higher
+
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
@@ -82,13 +81,10 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg
 fi
 source $CONFIG
 
-if [ ! -d "$gVcfFolder" ]; then
-	mkdir -p $gVcfFolder
-fi
 if [ -z "$OUTPREFIX" ]; then # If no file prefix specified then do not proceed
 	usage
 	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
@@ -108,27 +104,23 @@ tmpDir=/hpcfs/users/${USER}/tmp/$OUTPREFIX # Use a tmp directory for all of the 
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
+	
+# Define files for the array
+bedFile=($arrIndexBedFiles)
+
+## Start of the script ##
+# '-T' is no longer a valid command for haplotypecaller
+# 'o' is not a recognized option, -O  output (now capital O)
+# --emit-ref-confidence OR -ERC  NOT '--emitRefConfidence'
+# --min-base-quality-score, OR -mbq  NOT '--min_base_quality_score'
  
 cd $tmpDir
-cat $tmpDir/*.$SAMPLE.pipeline.log >> $WORKDIR/$SAMPLE.pipeline.log
-find *.$SAMPLE.snps.g.vcf > $tmpDir/$SAMPLE.gvcf.list.txt
-sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$SAMPLE.gvcf.list.txt > $tmpDir/$SAMPLE.inputGVCF.txt
-
-# -V has been replaced by -I for inputting VCF files
-
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar HaplotypeCaller \
+-I $WORKDIR/$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
-$(cat $tmpDir/$SAMPLE.inputGVCF.txt) \
--O $gVcfFolder/$SAMPLE.snps.g.vcf >> $WORKDIR/$SAMPLE.pipeline.log  2>&1
-
-bgzip $gVcfFolder/$SAMPLE.snps.g.vcf
-tabix $gVcfFolder/$SAMPLE.snps.g.vcf.gz
-
-## Check for bad things and clean up
-grep ERROR $WORKDIR/$SAMPLE.pipeline.log > $WORKDIR/$SAMPLE.pipeline.ERROR.log
-if [ -z $(cat $WORKDIR/$SAMPLE.pipeline.ERROR.log) ]; then
-	rm $WORKDIR/$SAMPLE.pipeline.ERROR.log $SAMPLE.marked.sort.bwa.$BUILD.bam $SAMPLE.marked.sort.bwa.$BUILD.bai
-	rm -r $tmpDir
-else 
-	echo "Some bad things went down while this script was running please see $SAMPLE.pipeline.ERROR.log and prepare for disappointment."
-fi
+-L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
+--dbsnp $GATKREFPATH/$BUILD/$DBSNP \
+--min-base-quality-score 20 \
+--native-pair-hmm-threads 10 \
+-ERC GVCF \
+-O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$SAMPLE.snps.g.vcf > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$SAMPLE.pipeline.log 2>&1

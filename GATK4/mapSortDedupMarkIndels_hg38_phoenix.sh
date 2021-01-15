@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J MapSortDup
-#SBATCH -o /fast/users/%u/launch/slurm-%j.out
+#SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
@@ -15,6 +15,7 @@
 #SBATCH --mail-user=%u@adelaide.edu.au
 
 # load modules
+module load arch/haswell
 module load BWA/0.7.17-foss-2016b
 module load Java/1.8.0_121
 module load HTSlib/1.10.2-foss-2016b
@@ -92,7 +93,7 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/data/neurogenetics/git/PhoenixScripts/shared/scripts/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
 fi
 source $CONFIG
 
@@ -111,15 +112,15 @@ if [ -z "$SAMPLE" ]; then # If sample name not specified then use "OUTPREFIX"
 	echo "Using $OUTPREFIX for sample name"
 fi
 if [ -z "$WORKDIR" ]; then # If no output directory then use default directory
-	WORKDIR=$FASTDIR/BWA-GATK/$SAMPLE
-	echo "Using $FASTDIR/BWA-GATK/$SAMPLE as the output directory"
+	WORKDIR=/hpcfs/users/${USER}/tmp/$SAMPLE
+	echo "Using /hpcfs/users/${USER}/tmp/$SAMPLE as the output directory"
 fi
 if [ -z "$LB" ]; then # If library not specified then use "IlluminaGenome"
 	LB=IlluminaGenome
 	echo "Using $LB for library name"
 fi
 
-tmpDir=$FASTDIR/tmp/$OUTPREFIX # Use a tmp directory for all of the GATK and samtools temp files
+tmpDir=/hpcfs/users/${USER}/tmp/$OUTPREFIX # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -160,7 +161,7 @@ fi
  
 cd $tmpDir
 bwa mem -K 100000000 -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:$SAMPLE" $BWAINDEXPATH/$BWAINDEX $SEQPATH/$SEQFILE1 $SEQPATH/$SEQFILE2 |\
-samtools view -bT $GATKREFPATH/$GATKINDEX - |\
+samtools view -bT $GATKREFPATH/$BUILD/$GATKINDEX - |\
 samtools sort -l 5 -m 4G -@24 -T$SAMPLE -o $SAMPLE.samsort.bwa.$BUILD.bam -
 
 # Mark duplicates

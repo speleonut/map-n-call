@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH -J gatherVCFs
+#SBATCH -J BQSR
 #SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
-#SBATCH -n 3
-#SBATCH --time=01:00:00
-#SBATCH --mem=12GB
+#SBATCH -n 24
+#SBATCH --time=05:00:00
+#SBATCH --mem=96GB
 
 # Notification configuration 
 #SBATCH --mail-type=END                                         
@@ -18,10 +18,9 @@
 # load modules
 module load arch/haswell
 module load Java/1.8.0_121
-module load HTSlib/1.10.2-foss-2016b
-module load SAMtools/1.10-foss-2016b
-### module load GATK 4..1.6.0
+### module load GATK 4.0.0.0
 ### module load picard/2.6.0 or higher
+
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
@@ -82,13 +81,10 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg            
 fi
 source $CONFIG
 
-if [ ! -d "$gVcfFolder" ]; then
-	mkdir -p $gVcfFolder
-fi
 if [ -z "$OUTPREFIX" ]; then # If no file prefix specified then do not proceed
 	usage
 	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
@@ -108,27 +104,39 @@ tmpDir=/hpcfs/users/${USER}/tmp/$OUTPREFIX # Use a tmp directory for all of the 
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
- 
+
+# For the next steps split the bams into bits based on the IndexBedFiles
+# First make tmp dirs
+for bed in $arrIndexBedFiles; do
+	mkdir -p $tmpDir/$bed
+done
+
+# Define files for the array
+bedFile=($arrIndexBedFiles)
+
 cd $tmpDir
+
 cat $tmpDir/*.$SAMPLE.pipeline.log >> $WORKDIR/$SAMPLE.pipeline.log
-find *.$SAMPLE.snps.g.vcf > $tmpDir/$SAMPLE.gvcf.list.txt
-sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$SAMPLE.gvcf.list.txt > $tmpDir/$SAMPLE.inputGVCF.txt
 
-# -V has been replaced by -I for inputting VCF files
+#find *.$SAMPLE.marked.sort.bwa.$BUILD.bam > $tmpDir/$SAMPLE.bam.list.txt
+#sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$SAMPLE.bam.list.txt > $tmpDir/$SAMPLE.inputBAM.txt
 
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+# Base quality score recalibration
+# --known-sites  NOT '-knownSites'
+# -RF OR --read-filter  NOT -rf, 'BadCigar' unrecognized read filter name
+# -nct 24 --num_cpu_threads_per_data_thread NOT an option in Gatk4
+# -O OR --output NOT -o
+
+
+java -Xmx96g -Djava.io.tmpdir=$tmpDir/ -jar $GATKPATH/GenomeAnalysisTK.jar BaseRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
-$(cat $tmpDir/$SAMPLE.inputGVCF.txt) \
--O $gVcfFolder/$SAMPLE.snps.g.vcf >> $WORKDIR/$SAMPLE.pipeline.log  2>&1
+-I $BAMPATH/$SAMPLE.marked.sort.bwa.$BUILD.bam \
+--known-sites $GATKREFPATH/$BUILD/$DBSNP \
+--known-sites $GATKREFPATH/$BUILD/b37_1000G_phase1.indels.b37.vcf \
+--known-sites $GATKREFPATH/$BUILD/b37_Mills_and_1000G_gold_standard.indels.b37.vcf \
+--output $tmpDir/$SAMPLE.recal.grp \
+ >> $WORKDIR/$SAMPLE.pipeline.log 2>&1
 
-bgzip $gVcfFolder/$SAMPLE.snps.g.vcf
-tabix $gVcfFolder/$SAMPLE.snps.g.vcf.gz
-
-## Check for bad things and clean up
-grep ERROR $WORKDIR/$SAMPLE.pipeline.log > $WORKDIR/$SAMPLE.pipeline.ERROR.log
-if [ -z $(cat $WORKDIR/$SAMPLE.pipeline.ERROR.log) ]; then
-	rm $WORKDIR/$SAMPLE.pipeline.ERROR.log $SAMPLE.marked.sort.bwa.$BUILD.bam $SAMPLE.marked.sort.bwa.$BUILD.bai
-	rm -r $tmpDir
-else 
-	echo "Some bad things went down while this script was running please see $SAMPLE.pipeline.ERROR.log and prepare for disappointment."
-fi
+echo "
+# BQSR metrics" >> $WORKDIR/$SAMPLE.Stat_Summary.txt
+cat $tmpDir/$SAMPLE.recal.grp >> $WORKDIR/$SAMPLE.Stat_Summary.txt

@@ -10,7 +10,7 @@
 #SBATCH -p batch
 #SBATCH -N 1
 #SBATCH -n 4
-#SBATCH --time=2:00:00 # change this to 3 days for real set
+#SBATCH --time=1:00:00 # change this to 3 days for real set
 #SBATCH --mem=24GB
 
 # Notification configuration 
@@ -28,4 +28,4 @@ module load SAMtools/1.10-foss-2016b
 ### module load picard/2.6.0 or higher
 
 # run the executable
-/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.Sept2020_hg38_Phoenix.sh -p son_HG002 -s /hpcfs/groups/phoenix-hpc-neurogenetics/sequences/Illumina/genome/AshkenaziTrio/son/ -o /hpcfs/users/a1149120/Ashkenazi/son/ -c /hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg -S son_HG002 -L IlluminaGenome -I son_HG002
+/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.Nov2020_hs37_Phoenix.sh -p 12200 -s /hpcfs/groups/phoenix-hpc-neurogenetics/sequences/Illumina/exome/CP-Kruer/12200/concat/ -o /hpcfs/groups/phoenix-hpc-neurogenetics/sequences/Illumina/exome/CP-Kruer/12200/concat/ -c /hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg -S 12200 -L IlluminaGenome -I 12200

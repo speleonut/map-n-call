@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J ApplyBQSR
-#SBATCH -o /fast/users/%u/launch/slurm-%j.out
+#SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
@@ -16,6 +16,7 @@
 #SBATCH --mail-user=%u@adelaide.edu.au
 
 # load modules
+module load arch/haswell
 module load Java/1.8.0_121
 ### module load GATK 4.0.0.0
 ### module load picard/2.6.0 or higher
@@ -80,7 +81,7 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/data/neurogenetics/git/PhoenixScripts/shared/scripts/BWA-GATKHC.GRCh38_full_analysis_set_local.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
 fi
 source $CONFIG
 
@@ -95,11 +96,11 @@ if [ -z "$SAMPLE" ]; then # If no SAMPLE name specified then do not proceed
 	exit 1
 fi
 if [ -z "$WORKDIR" ]; then # If no output directory then use current directory
-	WORKDIR=$FASTDIR/BWA-GATK/$SAMPLE
-	echo "Using $FASTDIR/BWA-GATK/$SAMPLE as the output directory"
+	WORKDIR=/hpcfs/users/${USER}/tmp/$SAMPLE
+	echo "Using /hpcfs/users/${USER}/tmp/$SAMPLE as the output directory"
 fi
 
-tmpDir=$FASTDIR/tmp/$OUTPREFIX # Use a tmp directory for all of the GATK and samtools temp files
+tmpDir=/hpcfs/users/${USER}/tmp/$OUTPREFIX # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -115,7 +116,7 @@ bedFile=($arrIndexBedFiles)
  
 cd $tmpDir
 java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar ApplyBQSR \
--R $GATKREFPATH/$GATKINDEX \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
 -I $SAMPLE.marked.sort.bwa.$BUILD.bam \
 -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
 -bqsr $tmpDir/$SAMPLE.recal.grp \
