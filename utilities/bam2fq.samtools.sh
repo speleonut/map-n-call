@@ -121,5 +121,5 @@ module load arch/haswell
 module load SAMtools
 
 # Revert BAMs to fastq
-samtools sort -l 0 -m 4G -n -@8 -T$tmpDir ${bamFile[SLURM_ARRAY_TASK_ID]} |\
+samtools sort -l 0 -m 4G -n -@8 -T$tmpDir ${bamFile} |\
 samtools fastq -1 $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_R1.fastq.gz -2 $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_U1.fastq.gz -n -@8 -
