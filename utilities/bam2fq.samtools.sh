@@ -7,7 +7,7 @@
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 8                            # number of cores (here uses 8)
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=32G                       # memory pool for all cores (here set to 32 GB)
+#SBATCH --mem=36G                       # memory pool for all cores (here set to 32 GB)
 
 # Notification configuration
 #SBATCH --mail-type=END                 # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
