@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J GATKGeno
-#SBATCH -o /fast/users/%u/launch/GATKgeno-%j.out
+#SBATCH -o /hpcfs/users/%u/launch/GATKgeno-%j.out
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
@@ -16,7 +16,7 @@
 
 # See usage for description and history
 # Script variables (set and forget)
-tmpDir=$FASTDIR/tmp/$SLURM_JOBID # Use a tmp directory in $FASTDIR/tmp for all of the GATK temp files
+tmpDir=/hpcfs/users/${USER}/tmp/$SLURM_JOBID # Use a tmp directory in $FASTDIR/tmp for all of the GATK temp files
 
 usage()
 {
@@ -72,7 +72,7 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$config" ]; then # If no config file specified use the default
-   config=/data/neurogenetics/git/PhoenixScripts/shared/scripts/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   config=/hpcfs/users/a1149120/Scripts/Gatk_hg38/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
 fi
 source $config
 
@@ -81,7 +81,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
 	echo "Your files will be prefixed with the code: $outPrefix"
 fi
 if [ -z "$inputDir" ]; then #If no input directory specified then use default
-	inputDir=/fast/users/a1149120/gVCF/gvcfs
+	inputDir=/hpcfs/users/${USER}/gVCF/gvcfs
 	echo "Using $inputDir as the input directory"
 fi
 if [ -z "$workDir" ]; then #If workDir not specified then run in current directory
@@ -93,6 +93,7 @@ if [ ! -d "$tmpDir" ]; then # If tmp directory doesn't exist (likely) then creat
 fi
 
 # load modules
+module load arch/haswell
 module load Java/1.8.0_121
 module load HTSlib/1.3.1-GCC-5.3.0-binutils-2.25
 module load R/3.4.2-foss-2016b
@@ -142,7 +143,7 @@ java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 
 # Apply recalibration for SNPs
 java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
--R $GATKREFPATH/$GATKINDEX \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V /fast/users/a1149120/gVCF/gvcfs/ExomeTest_output.vcf \
 -mode SNP \
 --recal-file $outPrefix.snp.recal \
@@ -152,7 +153,7 @@ java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyV
 
 #Generate recalibration data for INDELs
 java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
--R $GATKREFPATH/$GATKINDEX \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.snps.recal.vcf \
 --max-gaussians 4 \
 --resource:mills,known=true,training=true,truth=true,prior=12.0 $GATKREFPATH/$BUILD/Mills_and_1000G_gold_standard.indels.hg38.vcf \
@@ -167,7 +168,7 @@ java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 
 # Apply recalibration for INDELs
 java -Xmx30g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
--R $GATKREFPATH/$GATKINDEX \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.snps.recal.vcf \
 -mode INDEL \
 --recal-file $outPrefix.indel.recal \

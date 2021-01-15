@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH -J gatherVCFs
+#SBATCH -J Merge
 #SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
-#SBATCH -n 3
-#SBATCH --time=01:00:00
-#SBATCH --mem=12GB
+#SBATCH -n 24
+#SBATCH --time=02:00:00
+#SBATCH --mem=96GB
 
 # Notification configuration 
 #SBATCH --mail-type=END                                         
@@ -17,11 +17,10 @@
 
 # load modules
 module load arch/haswell
-module load Java/1.8.0_121
-module load HTSlib/1.10.2-foss-2016b
-module load SAMtools/1.10-foss-2016b
-### module load GATK 4..1.6.0
+module load sambamba/0.6.6-foss-2016b
+### module load GATK 4.0.0.0
 ### module load picard/2.6.0 or higher
+
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
@@ -82,13 +81,10 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg
 fi
 source $CONFIG
 
-if [ ! -d "$gVcfFolder" ]; then
-	mkdir -p $gVcfFolder
-fi
 if [ -z "$OUTPREFIX" ]; then # If no file prefix specified then do not proceed
 	usage
 	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
@@ -111,24 +107,13 @@ fi
  
 cd $tmpDir
 cat $tmpDir/*.$SAMPLE.pipeline.log >> $WORKDIR/$SAMPLE.pipeline.log
-find *.$SAMPLE.snps.g.vcf > $tmpDir/$SAMPLE.gvcf.list.txt
-sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$SAMPLE.gvcf.list.txt > $tmpDir/$SAMPLE.inputGVCF.txt
 
-# -V has been replaced by -I for inputting VCF files
+# Merge with sambamba
+find *.$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam > $tmpDir/$SAMPLE.inputBAM.txt
 
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
--R $GATKREFPATH/$BUILD/$GATKINDEX \
-$(cat $tmpDir/$SAMPLE.inputGVCF.txt) \
--O $gVcfFolder/$SAMPLE.snps.g.vcf >> $WORKDIR/$SAMPLE.pipeline.log  2>&1
+sambamba merge -t 24 -l 5 $WORKDIR/$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam $(cat $tmpDir/$SAMPLE.inputBAM.txt)
 
-bgzip $gVcfFolder/$SAMPLE.snps.g.vcf
-tabix $gVcfFolder/$SAMPLE.snps.g.vcf.gz
-
-## Check for bad things and clean up
-grep ERROR $WORKDIR/$SAMPLE.pipeline.log > $WORKDIR/$SAMPLE.pipeline.ERROR.log
-if [ -z $(cat $WORKDIR/$SAMPLE.pipeline.ERROR.log) ]; then
-	rm $WORKDIR/$SAMPLE.pipeline.ERROR.log $SAMPLE.marked.sort.bwa.$BUILD.bam $SAMPLE.marked.sort.bwa.$BUILD.bai
-	rm -r $tmpDir
-else 
-	echo "Some bad things went down while this script was running please see $SAMPLE.pipeline.ERROR.log and prepare for disappointment."
+# Clean up temporary .bam files
+if [ -f "$WORKDIR/$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam" ]; then
+	rm *.$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bam *.$SAMPLE.realigned.recal.sorted.bwa.$BUILD.bai 
 fi

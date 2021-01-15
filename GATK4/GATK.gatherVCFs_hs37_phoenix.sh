@@ -82,7 +82,7 @@ while [ "$1" != "" ]; do
 	shift
 done
 if [ -z "$CONFIG" ]; then # If no config file specified use the default
-   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh38_full_analysis_set_phoenix.cfg
+   CONFIG=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/GATK4/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg
 fi
 source $CONFIG
 
