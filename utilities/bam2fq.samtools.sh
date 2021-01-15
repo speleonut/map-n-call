@@ -126,4 +126,3 @@ samtools fastq -1 $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_R1.fastq.gz -2 
 
 # Clean up and generate run stats
 rm -r $tmpDir
-rcstat $SLURM_JOB_ID
