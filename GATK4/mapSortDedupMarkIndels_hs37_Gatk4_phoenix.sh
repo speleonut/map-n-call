@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J MapSortDup
-#SBATCH -o /hpcfs/users/%u/log/Dedup-%j.out
+#SBATCH -o /hpcfs/users/%u/log/mapSortDedup-%j.out
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
@@ -12,7 +12,7 @@
 # Notification configuration 
 #SBATCH --mail-type=END                                         
 #SBATCH --mail-type=FAIL                                        
-#SBATCH --mail-user=%u@adelaide.edu.au
+#SBATCH --mail-user=${USER}@adelaide.edu.au
 
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too

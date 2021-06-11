@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J BQSR
-#SBATCH -o /hpcfs/users/%u/launch/slurm-%j.out
+#SBATCH -o /hpcfs/users/%u/log/slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch
@@ -18,8 +18,6 @@
 # load modules
 module load arch/haswell
 module load Java/1.8.0_121
-### module load GATK 4.0.0.0
-### module load picard/2.6.0 or higher
 
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
@@ -132,8 +130,8 @@ java -Xmx96g -Djava.io.tmpdir=$tmpDir/ -jar $GATKPATH/GenomeAnalysisTK.jar BaseR
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -I $BAMPATH/$SAMPLE.marked.sort.bwa.$BUILD.bam \
 --known-sites $GATKREFPATH/$BUILD/$DBSNP \
---known-sites $GATKREFPATH/$BUILD/b37_1000G_phase1.indels.b37.vcf \
---known-sites $GATKREFPATH/$BUILD/b37_Mills_and_1000G_gold_standard.indels.b37.vcf \
+--known-sites $GATKREFPATH/$BUILD/${1kg.INDEL.VCF} \
+--known-sites $GATKREFPATH/$BUILD/${Mills.INDEL.VCF} \
 --output $tmpDir/$SAMPLE.recal.grp \
  >> $WORKDIR/$SAMPLE.pipeline.log 2>&1
 
