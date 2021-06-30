@@ -1,3 +1,5 @@
+These scripts are here predominantly for historical purposes. Use GATK4 scripts instead.
+
 HOW TO MAP TO GENOMES
 
 The genome alignment scripts are included in this folder.  The scripts form a set of dependent jobs in the Phoenix queue.
@@ -10,7 +12,7 @@ Help on running the pipeline is available by running
 This will output script logs, a WGS metrics file, .bam file and .g.vcf.gz file with it's tabix index
 
 You're welcome to check with me if you have trouble running the script or you get any errors:
-mark.corbett@adelaide.edu.au or report on the trello page "Pipelines" card.
+mark.corbett is at adelaide.edu.au or report on the trello page "Pipelines" card.
 Also try our new Google Doc:
 https://docs.google.com/document/d/1TbvCCqPcnCx9Xl9MZPZgQquyuG6FG43shAobZbsFB8I/edit#heading=h.l554c6o77bhn
 
