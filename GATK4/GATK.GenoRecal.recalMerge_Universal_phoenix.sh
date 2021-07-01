@@ -6,8 +6,8 @@
 #SBATCH -p batch
 #SBATCH -N 1
 #SBATCH -n 3
-#SBATCH --time=05:00:00
-#SBATCH --mem=12GB
+#SBATCH --time=12:00:00
+#SBATCH --mem=64GB
 
 # Notification configuration
 #SBATCH --mail-type=END
@@ -16,7 +16,7 @@
 
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
-modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b")
+modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b" "arch/skylake" "R/4.0.3")
 
 usage()
 {
@@ -91,19 +91,79 @@ for mod in "${modList[@]}"; do
     module load $mod
 done
 
+#Collect all log files
 cat $tmpDir/*.$outPrefix.pipeline.log >> $workDir/$outPrefix.pipeline.log
-find $tmpDir/*.$outPrefix.all.recal.vcf > $tmpDir/$outPrefix.vcf.list.txt
-sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
 
+#Merge VCFs from the previous step
+find $tmpDir/*.$outPrefix.sites.only.vcf > $tmpDir/$outPrefix.vcf.list.txt
+sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
 java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 $(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
--O ${workDir}/${outPrefix}.${BUILD}.vcf >> ${workDir}/${outPrefix}.pipeline.log  2>&1
+-O ${tmpDir}/${outPrefix}.merge.sites.only.vcf >> ${workDir}/${outPrefix}.pipeline.log  2>&1
+
+find $tmpDir/*.$outPrefix.vcf > $tmpDir/$outPrefix.vcf.list.txt
+sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
+java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
+$(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
+-O ${tmpDir}/${outPrefix}.merge.vcf >> ${workDir}/${outPrefix}.pipeline.log  2>&1
+
+#Generate recalibration data for INDELs
+java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
+-V $tmpDir/${outPrefix}.merge.sites.only.vcf \
+--max-gaussians 4 \
+--resource:mills,known=true,training=true,truth=true,prior=12.0 $GATKREFPATH/$BUILD/$Mills_INDELS \
+--resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $GATKREFPATH/$BUILD/$DBSNP \
+--resource:axiomPoly,known=false,training=true,truth=false,prior=10 $GATKREFPATH/$BUILD/$Axiom \
+-an DP -an QD -an MQRankSum -an ReadPosRankSum -an FS -an SOR \
+-mode INDEL \
+-tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
+-O $outPrefix.indel.recal.txt \
+--rscript-file $workDir/$outPrefix.recal.indel.plots.R \
+--tranches-file $outPrefix.indel.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
+
+# Apply recalibration for INDELs
+java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
+-V $tmpDir/$outPrefix.merge.vcf \
+-mode INDEL \
+--recal-file $outPrefix.indel.recal.txt \
+--tranches-file $outPrefix.indel.tranches \
+-ts-filter-level 99.0 \
+-O $tmpDir/$outPrefix.indel.recal.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
+
+# Generate Recalibration data for SNPs
+java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
+-V $tmpDir/${outPrefix}.merge.sites.only.vcf \
+--max-gaussians 6 \
+--resource:hapmap,known=false,training=true,truth=true,prior=15.0 $GATKREFPATH/$BUILD/$hapMap \
+--resource:omni,known=false,training=true,truth=false,prior=12.0 $GATKREFPATH/$BUILD/$Omni \
+--resource:1000G,known=false,training=true,truth=false,prior=10.0 $GATKREFPATH/$BUILD/${OneKg_HC_SNPs} \
+--resource:dbsnp,known=true,training=false,truth=false,prior=2.0 $GATKREFPATH/$BUILD/$DBSNP \
+-an DP -an MQ -an QD -an MQRankSum -an ReadPosRankSum -an FS -an SOR \
+-mode SNP \
+-tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.0 -tranche 90.0 \
+-O $outPrefix.snp.recal.txt \
+--rscript-file $workDir/$outPrefix.recal.snp.plots.R \
+--tranches-file $outPrefix.snp.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
+
+# Apply recalibration for SNPs
+java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
+-R $GATKREFPATH/$BUILD/$GATKINDEX \
+-V $tmpDir/$outPrefix.indel.recal.vcf \
+-mode SNP \
+--recal-file $outPrefix.snp.recal.txt \
+--tranches-file $outPrefix.snp.tranches \
+-ts-filter-level 99.5 \
+-O $tmpDir/$outPrefix.${BUILD}.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
 
 bgzip ${workDir}/${outPrefix}.${BUILD}.vcf
 tabix ${workDir}/${outPrefix}.${BUILD}.vcf.gz
 
-grep ERROR $workDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log > $workDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.pipeline.$outPrefix.ERROR.log
+grep ERROR $workDir/$outPrefix.pipeline.log > $workDir/pipeline.$outPrefix.ERROR.log
 
 if [ -z $(cat $workDir/$outPrefix.pipeline.ERROR.log) ]; then
 	rm $workDir/$outPrefix.pipeline.ERROR.log

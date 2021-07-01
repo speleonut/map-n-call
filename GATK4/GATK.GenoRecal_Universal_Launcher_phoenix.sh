@@ -81,6 +81,6 @@ fi
 ## Submit Jobs ##
 genotypeJob=`sbatch --array=0-23 --export=ALL $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
 genotypeJob=$(echo $genotypeJob | cut -d" " -f4)
-vqsrJob=`sbatch --array=0-23 --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.VQSR_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}`
-vqsrJob=$(echo $vqsrJob | cut -d" " -f4)
-sbatch --export=ALL --dependency=afterok:${vqsrJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}
+#vqsrJob=`sbatch --array=0-23 --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.VQSR_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}`
+#vqsrJob=$(echo $vqsrJob | cut -d" " -f4)
+sbatch --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}
