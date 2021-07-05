@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J MAS
-#SBATCH -o /fast/users/%u/log/revertSam.slurm-%j.out
+#SBATCH -o /hpcfs/users/%u/log/revertSam.slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch            	                            # partition (this is the queue your job will be added to)
@@ -15,10 +15,13 @@
 #SBATCH --mail-user=%u@adelaide.edu.au  	    # Email to which notification will be sent
 
 # revertSam.sh
+# Set location of picard.jar
+PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
+modList=("arch/haswell" "Java/10.0.1")
 usage()
 {
 echo "# revertSam.sh Sort a BAM by read name then strip mapping info.  The result will be an unmapped BAM file.
-# Dependencies:  Java v1.8+, Picard v2.22.3+
+# Dependencies:  Java v1.8+, GATK4
 # Info: https://broadinstitute.github.io/picard/
 #
 # Usage: sbatch $0 -b /path/to/bam/folder -o /path/to/output/folder -S sampleID | [-h | --help]
@@ -26,7 +29,7 @@ echo "# revertSam.sh Sort a BAM by read name then strip mapping info.  The resul
 # Options:
 # -b <arg>           REQUIRED: Path to where your bam file is located
 # -S <arg>           REQUIRED: ID of the sample which must be in the bam file name
-# -o <arg>           Path to the output default: $FASTDIR/sequences/sampleID/SLURM_JOB_ID
+# -o <arg>           Path to the output default: /hpcfs/users/$USER/sequences/sampleID/SLURM_JOB_ID
 # -h | --help	     Prints the message you are reading.
 #
 # History:
@@ -36,46 +39,52 @@ echo "# revertSam.sh Sort a BAM by read name then strip mapping info.  The resul
 #
 "
 }
-# Set location of picard.jar
-PICARD=/data/neurogenetics/executables/Picard-latest/picard.jar
 
 # Parse script options
 while [ "$1" != "" ]; do
-	case $1 in
-		 -b )	shift
-			bamDir=$1
- 			;;
-		 -S )	shift
-			sampleID=$1
- 			;;
-		 -o )	shift
-			outDir=$1
- 			;;
-		 -h | --help )	module load Java/10.0.1
-		                java -jar $PICARD RevertSam --help
-		                module unload Java/10.0.1
-				            usage
-				            exit 0
-     ;;
-		* )	module load Java/10.0.1
-		    java -jar $PICARD RevertSam --help
-			  module unload Java/10.0.1
-			  usage
-			  exit 1
-	esac
-	shift
+    case $1 in
+        -b )            shift
+                        bamDir=$1
+                        ;;
+        -S )            shift
+                        sampleID=$1
+                        ;;
+        -o )            shift
+                        outDir=$1
+                        ;;
+        -h | --help )   for mod in "${modList[@]}"; do
+                            module load $mod
+                        done
+                        java -jar $PICARD RevertSam --help
+                        for mod in "${modList[@]}"; do
+                            module unload $mod
+                        done
+                        usage
+                        exit 0
+                        ;;
+        * )             for mod in "${modList[@]}"; do
+                            module load $mod
+                        done
+                        java -jar $PICARD RevertSam --help
+                        for mod in "${modList[@]}"; do
+                            module unload $mod
+                        done
+                        usage
+                        exit 1
+    esac
+    shift
 done
 
 # Check that your script has everything it needs to start.
 if [ -z "$bamDir" ]; then # If bamFile not specified then do not proceed
     usage
-    echo "#ERROR: You need to specify -b /path/to/bamfile
-    # -b <arg>    REQUIRED: Path to where your bam file is located"
+    echo "## ERROR: You need to specify -b /path/to/bamfile
+# -b <arg>    REQUIRED: Path to where your bam file is located"
     exit 1
 fi
 if [ -z "$sampleID" ]; then # If sample not specified then do not proceed
     usage
-    echo "#ERROR: You need to specify -S sampleID because I need this to make your file names
+    echo "## ERROR: You need to specify -S sampleID because I need this to make your file names
     # -S <arg>    ID of the sample which must be in the bam file name"
     exit 1
 fi
@@ -83,8 +92,8 @@ fi
 bamFile=$( find $bamDir/*.bam | grep $sampleID )
 
 if [ -z "$outDir" ]; then # If output directory not specified then make one up
-    outDir=$FASTDIR/sequences/$sampleID/$SLURM_JOB_ID
-    echo "#INFO: You didn't specify an output directory so I'm going to put your files here.
+    outDir=/hpcfs/users/${USER}/sequences/$sampleID/$SLURM_JOB_ID
+    echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
     $outDir"
 fi
 if [ ! -d $outDir ]; then
@@ -92,7 +101,9 @@ if [ ! -d $outDir ]; then
 fi
 
 # Load modules
-module load Java/10.0.1
+for mod in "${modList[@]}"; do
+    module load $mod
+done
 
 #Do the thing
 java -Xmx16G -jar $PICARD RevertSam \

@@ -5,9 +5,9 @@
 #SBATCH -A robinson
 #SBATCH -p batch
 #SBATCH -N 1
-#SBATCH -n 40
-#SBATCH --time=24:00:00
-#SBATCH --mem=124GB
+#SBATCH -n 6
+#SBATCH --time=18:00:00
+#SBATCH --mem=36GB
 
 # Notification configuration 
 #SBATCH --mail-type=END                                         
@@ -25,7 +25,7 @@ echo"
 # Requires: GATKv4.x, Java, samtools
 #
 # Example:
-# sbatch --array=0-23 $0 [-p prefix_for_files -i /path/to/sample-name-map -o /path/to/output -c /path/to/config.cg] | [-h | --help]
+# sbatch $0 [-p prefix_for_files -i /path/to/sample-name-map -o /path/to/output -c /path/to/config.cg] | [-h | --help]
 #
 # Options:
 # -p Prefix                     OPTIONAL. Default is date(YYYYmmdd_unix_time). Prefix to help identify your merged gVCF files (This can be any alphanumeric text a short easily traced code is best eg. Project-Date)
@@ -90,7 +90,7 @@ if [ ! -d "$tmpDir" ]; then
 fi
 if [ -z "$workDir" ]; then #If workDir not specified then output to the default directory
         workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD
-        echo "Using $workDir as the output directory"
+        echo "## INFO: Using $workDir as the output directory"
 fi
 if [ ! -d "$workDir" ]; then
     mkdir -p $workDir
@@ -111,10 +111,17 @@ done
 # Define files for the array
 bedFile=($arrIndexBedFiles)
 
+# If this is a rerun GATK4 won't overwrite the previous database and will produce an error in the log
+# therefore if there is a previous version it's best to remove it
+if [ -d "$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database" ]; then
+    rm -rf $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database
+    echo "## WARN: Possible script re-run detected, a previous genomics database $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database has been removed."
+fi
+
 ## Start script ##
 cd ${tmpDir}
 
-java -Xmx64g -Xms64g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenomicsDBImport \
+java -Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenomicsDBImport \
 --genomicsdb-workspace-path $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database \
 --genomicsdb-shared-posixfs-optimizations true \
 --batch-size 50 \
@@ -124,7 +131,7 @@ java -Xmx64g -Xms64g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.ja
 --sample-name-map ${sampleNameMap} \
 --intervals $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1
 
-java -Xmx64g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenotypeGVCFs \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenotypeGVCFs \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -D $GATKREFPATH/$BUILD/$DBSNP \
 -G AS_StandardAnnotation \
@@ -132,6 +139,6 @@ java -Xmx64g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Genoty
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 --merge-input-intervals >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1
 
-java -Xmx64g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar MakeSitesOnlyVcf \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar MakeSitesOnlyVcf \
 -I $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.sites.only.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1

@@ -1,7 +1,8 @@
 #!/bin/bash
 # This is a coordinator script for genotypeing of gVGFs with GATK4 and subsequent merging of the produced VCFs
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
-tmpDir=""
+tmpDir="/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}" # Use a tmp directory for all of the GATK and samtools temp files
+
 usage()
 {
 echo"
@@ -59,7 +60,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
     echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
+tmpDir=$tmpDir/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
