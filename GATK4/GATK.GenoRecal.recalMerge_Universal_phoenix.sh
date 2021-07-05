@@ -120,17 +120,17 @@ java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 -an DP -an QD -an MQRankSum -an ReadPosRankSum -an FS -an SOR \
 -mode INDEL \
 -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.0 -tranche 90.0 \
--O $outPrefix.indel.recal.txt \
+-O $tmpDir/$outPrefix.indel.recal \
 --rscript-file $workDir/$outPrefix.recal.indel.plots.R \
---tranches-file $outPrefix.indel.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
+--tranches-file $tmpDir/$outPrefix.indel.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
 
 # Apply recalibration for INDELs
 java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.merge.vcf \
 -mode INDEL \
---recal-file $outPrefix.indel.recal.txt \
---tranches-file $outPrefix.indel.tranches \
+--recal-file $tmpDir/$outPrefix.indel.recal \
+--tranches-file $tmpDir/$outPrefix.indel.tranches \
 -ts-filter-level 99.0 \
 -O $tmpDir/$outPrefix.indel.recal.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
 
@@ -146,24 +146,24 @@ java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 -an DP -an MQ -an QD -an MQRankSum -an ReadPosRankSum -an FS -an SOR \
 -mode SNP \
 -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.8 -tranche 99.6 -tranche 99.0 -tranche 90.0 \
--O $outPrefix.snp.recal.txt \
+-O $tmpDir/$outPrefix.snp.recal \
 --rscript-file $workDir/$outPrefix.recal.snp.plots.R \
---tranches-file $outPrefix.snp.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
+--tranches-file $tmpDir/$outPrefix.snp.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
 
 # Apply recalibration for SNPs
 java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.indel.recal.vcf \
 -mode SNP \
---recal-file $outPrefix.snp.recal.txt \
---tranches-file $outPrefix.snp.tranches \
+--recal-file $tmpDir/$outPrefix.snp.recal \
+--tranches-file $tmpDir/$outPrefix.snp.tranches \
 -ts-filter-level 99.5 \
--O $tmpDir/$outPrefix.${BUILD}.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
+-O $workDir/$outPrefix.${BUILD}.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
 
 bgzip ${workDir}/${outPrefix}.${BUILD}.vcf
 tabix ${workDir}/${outPrefix}.${BUILD}.vcf.gz
 
-grep ERROR $workDir/$outPrefix.pipeline.log > $workDir/pipeline.$outPrefix.ERROR.log
+grep ERROR $workDir/$outPrefix.pipeline.log > $workDir/$outPrefix.pipeline.ERROR.log
 
 if [ -z $(cat $workDir/$outPrefix.pipeline.ERROR.log) ]; then
 	rm $workDir/$outPrefix.pipeline.ERROR.log
