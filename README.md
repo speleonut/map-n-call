@@ -14,7 +14,8 @@ There are two pipelines, each composed of dependent SLURM jobs. The first covers
 The second performs genotyping over multiple samples and classifies variants using VQSR. This pipeline is launched using the `GATK4/GATK.GenoRecal_Universal_Launcher_phoenix.sh` script
 
 ## Pipeline defaults
-If you don't tell them otherwise these scripts will automatically use the following defaults
+If you don't tell them otherwise these scripts will automatically use the following defaults:
+
 Genome build:  hs38DH
 
 BAM file output location: `/hpcfs/users/${USER}/BWA-GATKHC/${Sample}`
