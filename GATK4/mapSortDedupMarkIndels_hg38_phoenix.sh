@@ -16,7 +16,7 @@
 
 # Script for mapping Illumina pair-end sequence data
 ## Set hard coded paths and variables ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 logDir="/hpcfs/users/${USER}/log"
 
 if [ ! -d "${logDir}" ]; then

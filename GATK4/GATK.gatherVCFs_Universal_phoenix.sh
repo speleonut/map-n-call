@@ -17,7 +17,7 @@
 
 # A script to merge gVCF files together for later genotyping
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b" "SAMtools/1.10-foss-2016b")
 
 usage()

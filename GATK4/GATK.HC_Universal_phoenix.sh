@@ -18,7 +18,7 @@
 # A script to call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 modList=("arch/haswell" "Java/1.8.0_121")
 
 usage()

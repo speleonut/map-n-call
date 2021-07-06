@@ -18,7 +18,7 @@
 # A script to apply base quality score recalibration using the GATK v4.x best practices
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 modList=("arch/haswell" "Java/1.8.0_121")
 
 usage()
