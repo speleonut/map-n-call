@@ -6,8 +6,8 @@
 #SBATCH -p batch
 #SBATCH -N 1
 #SBATCH -n 3
-#SBATCH --time=12:00:00
-#SBATCH --mem=64GB
+#SBATCH --time=06:00:00
+#SBATCH --mem=48GB
 
 # Notification configuration
 #SBATCH --mail-type=END
@@ -16,7 +16,8 @@
 
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
-modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b" "arch/skylake" "R/4.0.3")
+modList=("arch/haswell" "Java/1.8.0_121" "arch/skylake" "HTSlib/1.9" "R/4.0.3")
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
 
 usage()
 {
@@ -79,7 +80,7 @@ if [ ! -d "$tmpDir" ]; then # If tmp directory doesn't exist then ask user to ch
         exit 1
 fi
 if [ -z "$workDir" ]; then #If workDir not specified then output to the default directory
-        workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD
+        workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD/$outPrefix
         echo "Using $workDir as the output directory"
 fi
 if [ ! -d "$workDir" ]; then
@@ -94,23 +95,27 @@ done
 #Collect all log files
 cat $tmpDir/*.$outPrefix.pipeline.log >> $workDir/$outPrefix.pipeline.log
 
-#Merge VCFs from the previous step
+#Merge and sort VCFs from the previous step
 find $tmpDir/*.$outPrefix.sites.only.vcf > $tmpDir/$outPrefix.vcf.list.txt
 sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar SortVcf  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
+--MAX_RECORDS_IN_RAM 2000000 \
+--TMP_DIR $tmpDir \
 $(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
 -O ${tmpDir}/${outPrefix}.merge.sites.only.vcf >> ${workDir}/${outPrefix}.pipeline.log  2>&1
 
 find $tmpDir/*.$outPrefix.vcf > $tmpDir/$outPrefix.vcf.list.txt
 sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar SortVcf  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
+--MAX_RECORDS_IN_RAM 2000000 \
+--TMP_DIR $tmpDir \
 $(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
 -O ${tmpDir}/${outPrefix}.merge.vcf >> ${workDir}/${outPrefix}.pipeline.log  2>&1
 
 #Generate recalibration data for INDELs
-java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
 --max-gaussians 4 \
@@ -125,7 +130,7 @@ java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 --tranches-file $tmpDir/$outPrefix.indel.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
 
 # Apply recalibration for INDELs
-java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.merge.vcf \
 -mode INDEL \
@@ -135,7 +140,7 @@ java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyV
 -O $tmpDir/$outPrefix.indel.recal.vcf >> $workDir/$outPrefix.pipeline.log 2>&1
 
 # Generate Recalibration data for SNPs
-java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
 --max-gaussians 6 \
@@ -151,7 +156,7 @@ java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar Varian
 --tranches-file $tmpDir/$outPrefix.snp.tranches >> $workDir/$outPrefix.pipeline.log 2>&1
 
 # Apply recalibration for SNPs
-java -Xmx48g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
+java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.indel.recal.vcf \
 -mode SNP \

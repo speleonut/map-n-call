@@ -17,6 +17,7 @@
 # See usage for description and history
 # Script variables (set and forget)
 modList=("arch/haswell" "Java/1.8.0_121")
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
 
 usage()
 {
