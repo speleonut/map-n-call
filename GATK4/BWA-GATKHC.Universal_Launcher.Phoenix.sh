@@ -1,7 +1,7 @@
 #!/bin/bash
 # This is the master script that coordinates job submission for the neurogenetics BWA-GATK4 haplotype caller pipeline.
 ## Set hard-coded paths and define functions ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 logDir="/hpcfs/users/${USER}/log"
 
 if [ ! -d "${logDir}" ]; then

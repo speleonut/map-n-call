@@ -16,7 +16,7 @@
 
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
-scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call
+scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call
 logDir="/hpcfs/users/${USER}/log"
 
 if [ ! -d "${logDir}" ]; then

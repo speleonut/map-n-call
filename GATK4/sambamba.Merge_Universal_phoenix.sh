@@ -17,7 +17,7 @@
 
 # A script to merge bam files of the same Sample from multiple genomic intervals
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 modList=("arch/haswell" "sambamba/0.6.6-foss-2016b")
 
 usage()
