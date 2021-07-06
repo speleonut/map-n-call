@@ -17,7 +17,7 @@
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
 modList=("arch/haswell" "Java/1.8.0_121" "arch/skylake" "HTSlib/1.9" "R/4.0.3")
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 
 usage()
 {
