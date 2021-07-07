@@ -21,6 +21,7 @@ echo"
 # Thomas Litster; 2/6/2021
 #
 # Modified: (Date; Name; Description)
+# 07/07/2021; Mark Corbett; Update to accept any genome build, change default output paths
 #
 "
 }
@@ -66,7 +67,7 @@ if [ ! -d "$tmpDir" ]; then
 fi
 if [ -z "$workDir" ]; then #If workDir not specified then output to the default directory
         workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD
-        echo "Using $workDir as the output directory"
+        echo "## INFO: Using $workDir as the output directory"
 fi
 if [ ! -d "$workDir" ]; then
     mkdir -p $workDir
@@ -82,6 +83,4 @@ fi
 ## Submit Jobs ##
 genotypeJob=`sbatch --array=0-23 --export=ALL $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
 genotypeJob=$(echo $genotypeJob | cut -d" " -f4)
-#vqsrJob=`sbatch --array=0-23 --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.VQSR_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}`
-#vqsrJob=$(echo $vqsrJob | cut -d" " -f4)
 sbatch --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}
