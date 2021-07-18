@@ -7,7 +7,7 @@ The following is an adaptation of the BWA - GATK4 "best practices" guidelines (o
 ## Getting started
 It's best to use our Google Doc to get started:
 
-https://docs.google.com/document/d/1TbvCCqPcnCx9Xl9MZPZgQquyuG6FG43shAobZbsFB8I/edit#heading=h.l554c6o77bhn
+https://docs.google.com/document/d/1TbvCCqPcnCx9Xl9MZPZgQquyuG6FG43shAobZbsFB8I/edit#heading=h.36c2whkyrevk
 
 There are two pipelines, each composed of dependent SLURM jobs. The first covers mapping with BWA to generating a gVCF with GATK4 haplotype caller for a single sample. This pipeline is launched using the `GATK4/BWA-GATKHC.Universal_Launcher.Phoenix.sh` script.
 
