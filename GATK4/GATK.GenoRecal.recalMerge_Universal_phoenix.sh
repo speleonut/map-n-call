@@ -143,7 +143,7 @@ java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyV
 java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
---max-gaussians 6 \
+--max-gaussians 4 \
 --resource:hapmap,known=false,training=true,truth=true,prior=15.0 $GATKREFPATH/$BUILD/$hapMap \
 --resource:omni,known=false,training=true,truth=false,prior=12.0 $GATKREFPATH/$BUILD/$Omni \
 --resource:1000G,known=false,training=true,truth=false,prior=10.0 $GATKREFPATH/$BUILD/${OneKg_HC_SNPs} \

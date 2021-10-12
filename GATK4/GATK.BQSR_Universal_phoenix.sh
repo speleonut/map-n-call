@@ -8,7 +8,7 @@
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH --time=08:00:00
-#SBATCH --mem=24GB
+#SBATCH --mem=28GB
 
 # Notification Configuration 
 #SBATCH --mail-type=END                                         
