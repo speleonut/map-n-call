@@ -31,7 +31,7 @@ echo "# This is the master script that coordinates job submission for primarily 
 # Usage $0 -p file_prefix -s /path/to/sequences -o /path/to/output -c /path/to/config.cfg -S Sample -L LIBRARY -I ID] | [ - h | --help ]
 #
 # Options
-# -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.fastq.gz 
+# -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.gz 
 # -s	REQUIRED. Path to the sequence files
 # -c	OPTIONAL. /path/to/config.cfg. A default config will be used if this is not specified.  The config contains all of the stuff that used to be set in the top part of our scripts
 # -o	OPTIONAL. Path to where you want to find your file output (if not specified an output directory /hpcfs/users/${USER}/BWA-GATK/\${Sample} is used)
@@ -98,22 +98,22 @@ if [ -z "$seqPath" ]; then # If path to sequences not specified then do not proc
 	exit 1
 fi
 
-seqFile1=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_fastq.gz
+seqFile1=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_*.gz
 if [ -f "$seqFile1" ]; then
-	fileCount=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
+	fileCount=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
 		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
 		exit 1
 	fi
-	seqFile2=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | tail -n 1)
+	seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
 else
-	fileCount=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
+	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
 		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
 		exit 1
 	fi
-	seqFile1=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | head -n 1) 
-	seqFile2=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | tail -n 1)
+	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1) 
+	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
 fi
 if [ ! -f "${seqFile1}" ]; then # Proceed to epic failure if can't locate unique seq file names
 	echo "Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"

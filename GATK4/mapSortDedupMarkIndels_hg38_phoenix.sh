@@ -35,7 +35,7 @@ echo "# Script for mapping Illumina pair-end sequence data
 # Usage $0 -p file_prefix -s /path/to/sequences -o /path/to/output -c /path/to/config.cfg -S Sample -L LIBRARY -I ID] | [ - h | --help ]
 #
 # Options
-# -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.fastq.gz 
+# -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.gz 
 # -s	REQUIRED. Path to the sequence files
 # -c	OPTIONAL. /path/to/config.cfg. A default config will be used if this is not specified.  The config contains all of the stuff that used to be set in the top part of our scripts
 # -o	OPTIONAL. Path to where you want to find your file output (if not specified an output directory /hpcfs/users/${USER}/BWA-GATK/\$Sample is used)
@@ -49,7 +49,7 @@ echo "# Script for mapping Illumina pair-end sequence data
 # 24/09/2015; Mark Corbett; Fork original for genomes
 # 25/09/2015; Mark Corbett; Pipe to samtools sort; Add getWGSMetrics
 # 12/10/2015; Mark Corbett; Fix error collecting .bam files to merge
-# 13/05/2016; Mark Corbett; Add option to specify Sample name different from outPrefix.  Make seq file search explicit for *.fastq.gz
+# 13/05/2016; Mark Corbett; Add option to specify Sample name different from outPrefix.  Make seq file search explicit for *.gz
 # 01/07/2016; Mark Corbett; Improve error handling
 # 24/08/2016; Mark Corbett; Fork for HPC version, bring up to date with GATKv3.6
 # 18/11/2016; Mark Corbett; Step down number of splits for PrintReads for higher efficiency
@@ -123,22 +123,22 @@ fi
 ## Locate sequence files ##
 # This is a bit awkward and prone to errors since relies on only a few file naming conventions and assumes that they will line up correctly after finding the files
 # ...and assumes only your seq files are in the folder matching the file prefix
-seqFile1=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_fastq.gz
+seqFile1=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_*.gz
 if [ -f "$seqFile1" ]; then
-	fileCount=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
+	fileCount=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
 		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
 		exit 1
 	fi
-	seqFile2=$(find ${seqPath}/*.fastq.gz | grep ${outPrefix}\_ | tail -n 1)
+	seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
 else
-	fileCount=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
+	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
 		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
 		exit 1
 	fi
-	seqFile1=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | head -n 1) 
-	seqFile2=$(find ${seqPath}/*.fastq.gz | grep -w ${outPrefix} | tail -n 1)
+	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1) 
+	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
 fi
 if [ ! -f "${seqFile1}" ]; then # Proceed to epic failure if can't locate unique seq file names
 	echo "Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
