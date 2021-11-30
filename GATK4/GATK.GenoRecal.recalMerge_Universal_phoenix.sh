@@ -17,7 +17,7 @@
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
 modList=("arch/haswell" "Java/1.8.0_121" "arch/skylake" "HTSlib/1.9" "R/4.0.3")
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call"
+scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 
 usage()
 {
@@ -143,7 +143,7 @@ java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyV
 java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
---max-gaussians 6 \
+--max-gaussians 4 \
 --resource:hapmap,known=false,training=true,truth=true,prior=15.0 $GATKREFPATH/$BUILD/$hapMap \
 --resource:omni,known=false,training=true,truth=false,prior=12.0 $GATKREFPATH/$BUILD/$Omni \
 --resource:1000G,known=false,training=true,truth=false,prior=10.0 $GATKREFPATH/$BUILD/${OneKg_HC_SNPs} \

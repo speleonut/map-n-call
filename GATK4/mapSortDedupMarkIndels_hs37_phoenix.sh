@@ -16,7 +16,7 @@
 
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
-scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/mark/map-n-call
+scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call
 logDir="/hpcfs/users/${USER}/log"
 
 if [ ! -d "${logDir}" ]; then
@@ -52,7 +52,7 @@ echo "# Script for processing and mapping Illumina 100bp pair-end sequence data 
 # 24/09/2015; Mark Corbett; Fork original for genomes
 # 25/09/2015; Mark Corbett; Pipe to samtools sort; Add getWGSMetrics
 # 12/10/2015; Mark Corbett; Fix error collecting .bam files to merge
-# 13/05/2016; Mark Corbett; Add option to specify Sample name different from outPrefix.  Make seq file search explicit for *.fastq.gz
+# 13/05/2016; Mark Corbett; Add option to specify Sample name different from outPrefix.  Make seq file search explicit for *.gz
 # 01/07/2016; Mark Corbett; Improve error handling
 # 24/08/2016; Mark Corbett; Fork for HPC version, bring up to date with GATKv3.6
 # 18/11/2016; Mark Corbett; Step down number of splits for PrintReads for higher efficiency
@@ -143,37 +143,37 @@ fi
 # This is a bit awkward and prone to errors since relies on only a few file naming conventions and assumes how they will line up after ls of files
 # ...and assumes only your seq files are in the folder matching the file prefix
 cd $seqPath
-seqFile1=$(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | head -n 1) # Assume sequence files are some form of $outPrefix_fastq.gz
+seqFile1=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | head -n 1) # Assume sequence files are some form of $outPrefix_fastq.gz
 if [ -f "$seqFile1" ]; then
-    seqFile2=$(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | tail -n 1)
-	fileCount=$(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | wc -l | sed 's/[^0-9]*//g')
+    seqFile2=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | tail -n 1)
+	fileCount=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
+        cat $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
         seqPath=$tmpDir
 		seqFile1=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1)"
-        cat $(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
+        $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1)"
+        cat $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
         seqFile2=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.fastq.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2)"
+        $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2)"
 	fi	
 else
-	seqFile1=$(ls *.fastq.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | head -n 1)
-	seqFile2=$(ls *.fastq.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | tail -n 1)
-	fileCount=$(ls *.fastq.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
+	seqFile1=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | head -n 1)
+	seqFile2=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | tail -n 1)
+	fileCount=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.fastq.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
+        cat $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
         seqPath=$tmpDir
 		seqFile1=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.fastq.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1)"
-        cat $(ls *.fastq.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
+        $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1)"
+        cat $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
         seqFile2=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.fastq.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2)"
+        $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2)"
 	fi
 fi
 if [ ! -f "$seqPath/$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
