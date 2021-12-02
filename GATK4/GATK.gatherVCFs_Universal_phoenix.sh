@@ -7,7 +7,7 @@
 #SBATCH -p batch
 #SBATCH -N 1
 #SBATCH -n 3
-#SBATCH --time=01:00:00
+#SBATCH --time=01:30:00
 #SBATCH --mem=12GB
 
 # Notification configuration 
