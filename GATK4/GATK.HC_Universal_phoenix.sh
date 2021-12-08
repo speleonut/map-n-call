@@ -92,6 +92,9 @@ fi
 
 ## Define the array for the batch job ##
 bedFile=($arrIndexBedFiles)
+if [ ! -d "$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" ]; then
+    mkdir -p $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}
+fi
 
 ## Load modules ##
 for mod in "${modList[@]}"; do
