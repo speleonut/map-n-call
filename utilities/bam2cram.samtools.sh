@@ -113,7 +113,7 @@ if [ -z "$genome" ]; then # If genome not specified then do not proceed
     exit 1
 fi
 
-bamFile=$( find ${bamDir[SLURM_ARRAY_TASK_ID]}/*.bam | grep ${sampleID[SLURM_ARRAY_TASK_ID]} )
+bamFile=$( find ${bamDir[SLURM_ARRAY_TASK_ID]}/*.bam | grep -w ${sampleID[SLURM_ARRAY_TASK_ID]} )
 baseBamFile=$( basename ${bamFile} .bam )
 
 if [ -z "$outDir" ]; then # If output directory not specified then make one up
