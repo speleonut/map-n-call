@@ -11,11 +11,14 @@ fi
 
 test_genome_build() {
 case "${BUILD}" in
-    "hs38DH" | "GRCh38_full_analysis_set" )    genomeVersion="38"
+    "hs38DH" | "GRCh38_full_analysis_set" )    genomeType="has_alt_contigs"
                 ;;
-    "hs37d5" | "ucsc.hg19" )    genomeVersion="37"
+    "hs37d5" | "ucsc.hg19" )    genomeType="no_alt_contigs"
                 ;;
-    * )         genomeVersion="38"
+    "CHM13v2" )    genomeType="no_alt_contigs"
+                ;;
+    * )         genomeType="has_alt_contigs"
+                Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
                 echo "## WARN: Genome build ${BUILD} not recognized, the default pipeline for GRCh38 / hg38 will be used."
                 ;;
 esac
@@ -138,12 +141,12 @@ fi
 
 ## Launch the job chain ##
 test_genome_build
-case "${genomeVersion}" in
-    "38" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_hg38_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
+case "${genomeType}" in
+    "has_alt_contigs" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_alt_aware_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
         ;;
-    "37" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_hs37_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
+    "no_alt_contigs" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_no_alt_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
         ;;
-    * ) echo "## ERROR: Genome build ${BUILD} corresponds with unrecognised pipeline version ${genomeVersion} the following config file is in use ${Config}"
+    * ) echo "## ERROR: Genome build ${BUILD} corresponds with unrecognised pipeline version ${genomeType} the following config file is in use ${Config}"
         exit 1
 esac
 BWAjob=$(echo $BWAjob | cut -d" " -f4)

@@ -193,7 +193,7 @@ done
 # Map reads to genome using BWA-MEM
  
 cd $tmpDir
-bwa mem -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample[$SLURM_ARRAY_TASK_ID]}" $BWAINDEXPATH/$BWAINDEX $seqPath/$seqFile1 $seqPath/$seqFile2 |\
+bwa mem  -K 100000000 -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample[$SLURM_ARRAY_TASK_ID]}" $BWAINDEXPATH/$BWAINDEX $seqPath/$seqFile1 $seqPath/$seqFile2 |\
 samtools view -bT $GATKREFPATH/$BUILD/$GATKINDEX - |\
 samtools sort -l 5 -m 4G -@24 -T${Sample[$SLURM_ARRAY_TASK_ID]} -o ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam -
 
