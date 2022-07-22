@@ -129,7 +129,7 @@ for mod in "${modList[@]}"; do
 done
 
 #Do the thing
-java -Xmx16G -jar picard.jar LiftoverVcf \
+java -Xmx16G -jar $PICARD LiftoverVcf \
     I=${vcfFile[$SLURM_ARRAY_TASK_ID]} \
     O=$outDir/$vcfOut \
     CHAIN=$chainFile \
