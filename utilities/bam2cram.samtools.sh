@@ -26,20 +26,19 @@ echo "# bam2cram.samtools.sh convert a BAM to CRAM file.
 # Dependencies:  samtools v1.9+
 # Info: http://www.htslib.org/doc/samtools.html
 #
-# Usage: sbatch $0 -b /path/to/bam/folder -S sampleID [-g /path/to/reference -o /path/to/output/folder] | [-h | --help]
+# Usage: sbatch $0 -b /path/to/bam/file.bam -S sampleID [-g /path/to/reference -o /path/to/output/folder] | [-h | --help]
 #        sbatch --array <0-(n-1) samples> $0 -i /path/to/input-file [-o /path/to/output/folder]
 #
 # Options:
-# -b <arg>           REQUIRED: Path to where your bam file is located.
-# -S <arg>           REQUIRED: ID of the sample which will be used to identify your bam file.
-# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the bam header if you don't set this.
-# -o <arg>           OPTIONAL: Path to the output default is the bam folder
+# -b <arg>           REQUIRED: Path to your bam file.
+# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the bam header if you don't set this.
+# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your bam file.
 # --delete           OPTIONAL: Delete the original BAM if the CRAM file has been made successfully.  The default is do NOT delete.
 # -h | --help        Prints the message you are reading.
 #
 # Array job options:
-# -i <arg>           REQUIRED: If running an array job a tab delimited text file with two columns listing the required arguments -b and -S from above (in that order).
-# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the bam header if you don't set this.
+# -i <arg>           REQUIRED: A text file listing the bam files to convert.
+# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the bam header if you don't set this.
 #                              If set on an array job then all BAM files MUST have been mapped to the same reference.
 # -o <arg>           OPTIONAL: Path to the output default: $userDir/alignments/sampleID/SLURM_JOB_ID
 # --delete           OPTIONAL: Delete the original BAM if the CRAM file has been made successfully.  The default is do NOT delete.
@@ -88,7 +87,7 @@ case "${genomeSize}" in
                     genomeBuild="$refDir/hg19_1stM_unmask_ran_all.fa"
                     ;;
     * )         usage
-                echo "## ERROR: Genome length $genomeSize not matched you may need to specify the genome build directly."
+                echo "## ERROR: Genome length $genomeSize was not matched, you may need to specify the genome build directly."
                 exit 1
                 ;;
 esac
@@ -98,10 +97,7 @@ esac
 while [ "$1" != "" ]; do
     case $1 in
         -b )    shift
-                bamDir=$1
-                ;;
-        -S )    shift
-                sampleID=$1
+                bamFile=$1
                 ;;
         -g )    shift
                 genomeBuild=$1
@@ -138,30 +134,23 @@ done
 
 # Check that your script has everything it needs to start.
 if [ ! -z "$inputFile" ]; then
-    bamDir=($(awk '{print $1}' $inputFile))
-    sampleID=($(awk '{print $2}' $inputFile))
+    readarray -t bamFile < $inputFile
 fi	
-if [ -z "$bamDir" ]; then # If bamFile not specified then do not proceed
+if [ -z "$bamFile" ]; then # If bamFile not specified then do not proceed
     usage
-    echo "## ERROR: You need to specify -b /path/to/bamfile
-    # -b <arg>    REQUIRED: Path to where your bam file is located"
+    echo "## ERROR: You need to specify -b /path/to/bam/file.bam
+    # -b <arg>    REQUIRED: Path to your bam file"
     exit 1
 fi
-if [ -z "$sampleID" ]; then # If sample not specified then do not proceed
-    usage
-    echo "## ERROR: You need to specify -S sampleID because I need this to make your file names
-    # -S <arg>    ID of the sample which will form the first part of your fastq file names"
-    exit 1
-fi
+
+baseBamFile=$( basename ${bamFile[SLURM_ARRAY_TASK_ID]} .bam )
+bamDir=$( dirname ${bamFile[SLURM_ARRAY_TASK_ID]} )
+baiFile=${bamFile[SLURM_ARRAY_TASK_ID]}.bai
 
 # Load modules
 for mod in "${modList[@]}"; do
     module load $mod
 done
-
-bamFile=$( find ${bamDir[SLURM_ARRAY_TASK_ID]}/*.bam | grep -w ${sampleID[SLURM_ARRAY_TASK_ID]} )
-baiFile=$( find ${bamDir[SLURM_ARRAY_TASK_ID]}/*.bai | grep -w ${sampleID[SLURM_ARRAY_TASK_ID]} )
-baseBamFile=$( basename ${bamFile} .bam )
 
 if [ -z "$genomeBuild" ]; then # If genome not specified then do not proceed
     genomeSize=$(samtools view -H $bamFile | grep @SQ | cut -f3 -d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
@@ -169,7 +158,7 @@ if [ -z "$genomeBuild" ]; then # If genome not specified then do not proceed
 fi
 
 if [ -z "$outDir" ]; then # If output directory not specified then make one up
-    outDir=${bamDir[SLURM_ARRAY_TASK_ID]}
+    outDir=${bamDir}
     echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
     $outDir"
 fi
@@ -185,10 +174,10 @@ samtools index ${outDir}/${baseBamFile}.cram
 # Check everything went OK and clean up the old BAM file or suggest deletion
 if "$delBamFile"; then
     if [ -f "${outDir}/${baseBamFile}.cram.crai" ]; then
-        rm ${bamFile} ${baiFile}
-        echo "## INFO: Original BAM and BAI file ${bamFile} has been removed as per your request."
+        rm ${bamFile[SLURM_ARRAY_TASK_ID]} ${baiFile}
+        echo "## INFO: Original BAM and BAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
     else
-        echo "## ERROR: Something may have gone wrong during the conversion the .crai file was not created"
+        echo "## ERROR: Something may have gone wrong during the conversion, the .crai file was not created.  Your original bam file has not been deleted"
         exit 1
     fi
 else
