@@ -153,7 +153,7 @@ for mod in "${modList[@]}"; do
 done
 
 if [ -z "$genomeBuild" ]; then # If genome not specified then do not proceed
-    genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -f3 | cut -f2-d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
+    genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -f3 | cut -f2 -d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
     select_genome_build
 fi
 
