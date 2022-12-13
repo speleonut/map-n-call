@@ -17,6 +17,7 @@
 # Script paths and modules
 userDir="/hpcfs/users/${USER}"
 refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
+delBamFile=false
 modList=("arch/haswell" "SAMtools/1.10-foss-2016b")
 
 # Script functions
@@ -86,11 +87,11 @@ case "${genomeSize}" in
     3101804741 )    buildID="hg19_1stM_unmask_ran_all"
                     genomeBuild="$refDir/hg19_1stM_unmask_ran_all.fa"
                     ;;
-    * )         usage
-                echo "## ERROR: Genome length $genomeSize was not matched, you may need to specify the genome build directly."
+    * )         echo "## ERROR: Genome length $genomeSize for ${bamFile[SLURM_ARRAY_TASK_ID]} was not matched, you may need to specify the genome build directly using the -g flag."
                 exit 1
                 ;;
 esac
+echo "## INFO: The BAM file ${bamFile[SLURM_ARRAY_TASK_ID]} was likely mapped to $buildID corresponding to the refseq $genomeBuild."
 }
 
 # Parse script options
@@ -159,7 +160,7 @@ fi
 
 if [ -z "$outDir" ]; then # If output directory not specified then make one up
     outDir=${bamDir}
-    echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
+    echo "## INFO: You didn't specify an output directory so I'm going to put your files here:
     $outDir"
 fi
 
