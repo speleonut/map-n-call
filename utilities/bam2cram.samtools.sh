@@ -26,8 +26,8 @@ echo "# bam2cram.samtools.sh convert a BAM to CRAM file.
 # Dependencies:  samtools v1.9+
 # Info: http://www.htslib.org/doc/samtools.html
 #
-# Usage: sbatch $0 -b /path/to/bam/file.bam -S sampleID [-g /path/to/reference -o /path/to/output/folder] | [-h | --help]
-#        sbatch --array <0-(n-1) samples> $0 -i /path/to/input-file [-o /path/to/output/folder]
+# Usage: sbatch $0 -b /path/to/bam/file.bam [-g /path/to/reference -o /path/to/output/folder --delete] | [-h | --help]
+#        sbatch --array 0-(n-1)samples $0 -i /path/to/input-file [-o /path/to/output/folder --delete]
 #
 # Options:
 # -b <arg>           REQUIRED: Path to your bam file.
@@ -39,8 +39,8 @@ echo "# bam2cram.samtools.sh convert a BAM to CRAM file.
 # Array job options:
 # -i <arg>           REQUIRED: A text file listing the bam files to convert.
 # -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the bam header if you don't set this.
-#                              If set on an array job then all BAM files MUST have been mapped to the same reference.
-# -o <arg>           OPTIONAL: Path to the output default: $userDir/alignments/sampleID/SLURM_JOB_ID
+#                              If you set this on an array job then all BAM files MUST be mapped to the same reference.
+# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your bam file.
 # --delete           OPTIONAL: Delete the original BAM if the CRAM file has been made successfully.  The default is do NOT delete.
 # -h | --help        Prints the message you are reading.
 #
@@ -153,7 +153,7 @@ for mod in "${modList[@]}"; do
 done
 
 if [ -z "$genomeBuild" ]; then # If genome not specified then do not proceed
-    genomeSize=$(samtools view -H $bamFile | grep @SQ | cut -f3 -d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
+    genomeSize=$(samtools view -H $bamFile | grep @SQ | cut -f3 | cut -f2-d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
     select_genome_build
 fi
 
