@@ -136,7 +136,7 @@ done
 if [ ! -z "$inputFile" ]; then
     readarray -t bamFile < $inputFile
 fi	
-if [ -z "$bamFile" ]; then # If bamFile not specified then do not proceed
+if [ -z "${bamFile[SLURM_ARRAY_TASK_ID]}" ]; then # If bamFile not specified then do not proceed
     usage
     echo "## ERROR: You need to specify -b /path/to/bam/file.bam
     # -b <arg>    REQUIRED: Path to your bam file"
@@ -153,7 +153,7 @@ for mod in "${modList[@]}"; do
 done
 
 if [ -z "$genomeBuild" ]; then # If genome not specified then do not proceed
-    genomeSize=$(samtools view -H $bamFile | grep @SQ | cut -f3 | cut -f2-d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
+    genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -f3 | cut -f2-d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
     select_genome_build
 fi
 
@@ -168,7 +168,7 @@ if [ ! -d "$outDir" ]; then
 fi
 
 # Convert BAMs to CRAMs
-samtools view -T ${genomeBuild} -C -@8 ${bamFile} -O CRAM -o ${outDir}/${baseBamFile}.cram
+samtools view -T ${genomeBuild} -C -@8 ${bamFile[SLURM_ARRAY_TASK_ID]} -O CRAM -o ${outDir}/${baseBamFile}.cram
 samtools index ${outDir}/${baseBamFile}.cram
 
 # Check everything went OK and clean up the old BAM file or suggest deletion
