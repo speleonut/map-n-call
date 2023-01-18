@@ -17,11 +17,11 @@
 # liftOver.picard.sh
 # Set location of picard.jar
 PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
-modList=("arch/haswell" "Java/10.0.1")
+modList=("arch/haswell" "Java/10.0.1" "BCFtools/1.9-foss-2016b")
 usage()
 {
-echo "# liftOver.picard.sh Sort a BAM by read name then strip mapping info.  The result will be an unmapped BAM file.
-# Dependencies:  Java v1.8+, GATK4
+echo "# liftOver.picard.sh Lift a vcf over from one genome build to another.
+# Dependencies:  Java v1.8+, GATK4, target reference genome, chain file from original to target genome
 # Info: https://broadinstitute.github.io/picard/
 #
 # Usage: sbatch $0 -v /path/to/vcf/folder -C /path/to/chain -R /path/to/target_ref [ -B old_build,new_build -o /path/to/output/folder ] | [-h | --help]
@@ -32,7 +32,7 @@ echo "# liftOver.picard.sh Sort a BAM by read name then strip mapping info.  The
 # -C <arg>           REQUIRED: Path to the chain file
 # -R <arg>           REQUIRED: Path to reference sequence
 # -o <arg>           OPTIONAL: Path to the output default: /hpcfs/users/$USER/liftOver/SLURM_JOB_ID
-# -B <arg>,<arg>     OPTIONAL: If you have a genome build in your file name prior to .vcf e.g. *.hg19.vcf you can update to the new build e.g. *.hg38.vcf
+# -B <arg>,<arg>     OPTIONAL: If you have a genome build in your file name prior to .vcf e.g. *.hg19.vcf you can update to the new build e.g. *.hg38.vcf by supplying the old and new build as a comma separated list e.g. hg19,hg38
 # -h | --help	     Prints the message you are reading.
 #
 # History:
@@ -128,11 +128,27 @@ for mod in "${modList[@]}"; do
     module load $mod
 done
 
-#Do the thing
+# Lift over easy variants
 java -Xmx16G -jar $PICARD LiftoverVcf \
     I=${vcfFile[$SLURM_ARRAY_TASK_ID]} \
-    O=$outDir/$vcfOut \
+    O=$outDir/0.$vcfOut.gz \
     CHAIN=$chainFile \
-    REJECT=$outDir/rejected_variants.$vcfOut.gz \
+    REJECT=$outDir/rejected_variants.0.$vcfOut.gz \
     R=$targetGenome \
     CREATE_INDEX=true
+
+# Lift over the less easy variants
+tabix $outDir/rejected_variants.0.$vcfOut.gz
+bcftools norm -m- --threads 4 -o $outDir/split.0.$vcfOut.gz -Oz $outDir/rejected_variants.0.$vcfOut.gz
+
+java -Xmx16G -jar $PICARD LiftoverVcf \
+    I=$outDir/split.0.$vcfOut.gz \
+    O=$outDir/1.$vcfOut.gz \
+    RECOVER_SWAPPED_REF_ALT=true
+    CHAIN=$chainFile \
+    REJECT=$outDir/rejected_variants.1.$vcfOut.gz \
+    R=$targetGenome \
+    CREATE_INDEX=true
+
+bcftools -c none -o $outDir/$vcfOut.gz -Oz $outDir/0.$vcfOut.gz $outDir/1.$vcfOut.gz
+tabix $outDir/$vcfOut.gz
