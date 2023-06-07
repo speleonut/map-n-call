@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -J BAM2CRAM
-#SBATCH -o /hpcfs/users/%u/log/bam2cram.samtools.slurm-%j.out
+#SBATCH -J CRAM2BAM
+#SBATCH -o /hpcfs/users/%u/log/cram2bam.samtools.slurm-%j.out
 
 #SBATCH -A robinson
 #SBATCH -p batch                        # partition (this is the queue your job will be added to)
@@ -31,22 +31,22 @@ echo "# bam2cram.samtools.sh convert a BAM to CRAM file.
 #        sbatch --array 0-(n-1)samples $0 -i /path/to/input-file [-o /path/to/output/folder --delete]
 #
 # Options:
-# -b <arg>           REQUIRED: Path to your bam file.
-# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the bam header if you don't set this.
-# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your bam file.
-# --delete           OPTIONAL: Delete the original BAM if the CRAM file has been made successfully.  The default is do NOT delete.
+# -b <arg>           REQUIRED: Path to your CRAM file.
+# -g <arg>           OPTIONAL: Path to the original reference that your CRAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the header if you don't set this.
+# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your CRAM file.
+# --delete           OPTIONAL: Delete the original CRAM if the BAM file has been made successfully.  The default is do NOT delete.
 # -h | --help        Prints the message you are reading.
 #
 # Array job options:
-# -i <arg>           REQUIRED: A text file listing the bam files to convert.
-# -g <arg>           OPTIONAL: Path to the original reference that your BAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the bam header if you don't set this.
-#                              If you set this on an array job then all BAM files MUST be mapped to the same reference.
-# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your bam file.
-# --delete           OPTIONAL: Delete the original BAM if the CRAM file has been made successfully.  The default is do NOT delete.
+# -i <arg>           REQUIRED: A text file listing the CRAM files to convert.
+# -g <arg>           OPTIONAL: Path to the original reference that your CRAM file was mapped to. The script will try to locate the right genome based on the @SQ lines in the header if you don't set this.
+#                              If you set this on an array job then all CRAM files MUST be mapped to the same reference.
+# -o <arg>           OPTIONAL: Path to the output default is the folder that contains your CRAM file.
+# --delete           OPTIONAL: Delete the original CRAM if the BAM file has been made successfully.  The default is do NOT delete.
 # -h | --help        Prints the message you are reading.
 #
 # History:
-# Script created by: Mark Corbett on 12/10/2021
+# Script created by: Mark Corbett on 02/02/2023
 # email:mark dot corbett is at adelaide university
 # Modified (Date; Name; Description):
 # 
@@ -91,7 +91,7 @@ case "${genomeSize}" in
                 exit 1
                 ;;
 esac
-echo "## INFO: The BAM file ${bamFile[SLURM_ARRAY_TASK_ID]} was likely mapped to $buildID corresponding to the refseq $genomeBuild."
+echo "## INFO: The CRAM file ${bamFile[SLURM_ARRAY_TASK_ID]} was likely mapped to $buildID corresponding to the refseq $genomeBuild."
 }
 
 # Parse script options
@@ -139,14 +139,14 @@ if [ ! -z "$inputFile" ]; then
 fi	
 if [ -z "${bamFile[SLURM_ARRAY_TASK_ID]}" ]; then # If bamFile not specified then do not proceed
     usage
-    echo "## ERROR: You need to specify -b /path/to/bam/file.bam
-    # -b <arg>    REQUIRED: Path to your bam file"
+    echo "## ERROR: You need to specify -b /path/to/bam/file.cram
+    # -b <arg>    REQUIRED: Path to your CRAM file"
     exit 1
 fi
 
-baseBamFile=$( basename ${bamFile[SLURM_ARRAY_TASK_ID]} .bam )
+baseBamFile=$( basename ${bamFile[SLURM_ARRAY_TASK_ID]} .cram )
 bamDir=$( dirname ${bamFile[SLURM_ARRAY_TASK_ID]} )
-baiFile=${bamFile[SLURM_ARRAY_TASK_ID]}.bai
+baiFile=${bamFile[SLURM_ARRAY_TASK_ID]}.crai
 
 # Load modules
 for mod in "${modList[@]}"; do
@@ -169,18 +169,18 @@ if [ ! -d "$outDir" ]; then
 fi
 
 # Convert BAMs to CRAMs
-samtools view -T ${genomeBuild} -C -@8 ${bamFile[SLURM_ARRAY_TASK_ID]} -O CRAM -o ${outDir}/${baseBamFile}.cram
-samtools index ${outDir}/${baseBamFile}.cram
+samtools view -T ${genomeBuild} -b -@8 -o ${outDir}/${baseBamFile}.bam ${bamFile[SLURM_ARRAY_TASK_ID]}
+samtools index ${outDir}/${baseBamFile}.bam
 
-# Check everything went OK and clean up the old BAM file or suggest deletion
+# Check everything went OK and clean up the old CRAM file or suggest deletion
 if "$delBamFile"; then
-    if [ -f "${outDir}/${baseBamFile}.cram.crai" ]; then
+    if [ -f "${outDir}/${baseBamFile}.cram.bai" ]; then
         rm ${bamFile[SLURM_ARRAY_TASK_ID]} ${baiFile}
         echo "## INFO: Original BAM and BAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
     else
-        echo "## ERROR: Something may have gone wrong during the conversion, the .crai file was not created.  Your original bam file has not been deleted"
+        echo "## ERROR: Something may have gone wrong during the conversion, the .bai file was not created.  Your original CRAM file has not been deleted"
         exit 1
     fi
 else
-    echo "## INFO: Thanks for converting your BAM to a CRAM.  Help save some more space by removing the original BAM file (you can always convert it back or remap it if you ever need the BAM again)"
+    echo "## INFO: CRAM to BAM conversion completed.  Once you have finished working with the BAM please consider removing it and using CRAM format for long-term storage."
 fi
