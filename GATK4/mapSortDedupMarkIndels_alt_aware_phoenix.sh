@@ -25,7 +25,7 @@ if [ ! -d "${logDir}" ]; then
 fi
 module purge
 module use /apps/skl/modules/all
-modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCCcore-11.2.0" "SAMtools/1.17-GCCcore-11.2.0")
+modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
 usage()
 {
 echo "# Script for mapping Illumina pair-end sequence data

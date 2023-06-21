@@ -16,7 +16,7 @@
 userDir=/hpcfs/users/${USER}
 module purge
 module use /apps/skl/modules/all
-modList=("SAMtools/1.17-GCCcore-11.2.0")
+modList=("SAMtools/1.17-GCC-11.2.0")
 
 # bam2fq.samtools.sh
 usage()
