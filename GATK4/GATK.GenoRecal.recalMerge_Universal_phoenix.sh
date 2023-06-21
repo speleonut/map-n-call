@@ -2,8 +2,7 @@
 
 #SBATCH -J recal_merge
 #SBATCH -o /hpcfs/users/%u/log/recalMerge-slurm-%j.out
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=06:00:00
@@ -16,8 +15,10 @@
 
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
-modList=("arch/haswell" "Java/1.8.0_121" "arch/skylake" "HTSlib/1.9" "R/4.0.3")
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0" "R/4.0.3")
 
 usage()
 {

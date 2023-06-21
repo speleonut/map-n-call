@@ -2,8 +2,7 @@
 
 #SBATCH -J MapSortDup
 #SBATCH -o /hpcfs/users/%u/log/mapSortDedup-%j.out
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 25
 #SBATCH --time=24:00:00
@@ -18,13 +17,16 @@
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call
 logDir="/hpcfs/users/${USER}/log"
+sambambaProg=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/sambamba-0.8.2-linux-amd64-static
 
 if [ ! -d "${logDir}" ]; then
     mkdir -p ${logDir}
     echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
 fi
 
-modList=("arch/haswell" "BWA/0.7.17-foss-2016b" "HTSlib/1.10.2-foss-2016b" "SAMtools/1.10-foss-2016b" "sambamba/0.6.6-foss-2016b")
+module purge
+module use /apps/skl/modules/all
+modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCCcore-11.2.0" "SAMtools/1.17-GCCcore-11.2.0")
 
 usage()
 {
@@ -198,7 +200,7 @@ samtools view -bT $GATKREFPATH/$BUILD/$GATKINDEX - |\
 samtools sort -l 5 -m 4G -@24 -T${Sample[$SLURM_ARRAY_TASK_ID]} -o ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam -
 
 # Mark duplicates 
-sambamba markdup -t 24 -l 5 --tmpdir=$tmpDir --overflow-list-size 1000000 --hash-table-size 1000000 ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam
+$sambambaProg markdup -t 24 -l 5 --tmpdir=$tmpDir --overflow-list-size 1000000 --hash-table-size 1000000 ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam
 if [ -f "$workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam" ]; then
     rm -R $tmpDir
 else

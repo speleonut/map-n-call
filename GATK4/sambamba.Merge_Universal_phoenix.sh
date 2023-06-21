@@ -2,9 +2,7 @@
 
 #SBATCH -J Merge
 #SBATCH -o /hpcfs/users/%u/log/mergeBAM-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 24
 #SBATCH --time=03:00:00
@@ -18,7 +16,7 @@
 # A script to merge bam files of the same Sample from multiple genomic intervals
 ## List modules and file paths ##
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "sambamba/0.6.6-foss-2016b")
+sambambaProg=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/sambamba-0.8.2-linux-amd64-static
 
 usage()
 {
@@ -89,15 +87,10 @@ if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
 	
-## Load modules ##
-for mod in "${modList[@]}"; do
-    module load $mod
-done
-
 # Merge with sambamba
 find $tmpDir/*.$Sample.recal.sorted.bwa.$BUILD.bam > $tmpDir/$Sample.inputBAM.txt
 
-sambamba merge -t 24 -l 5 $workDir/$Sample.recal.sorted.bwa.$BUILD.bam $(cat $tmpDir/$Sample.inputBAM.txt)
+$sambambaProg merge -t 24 -l 5 $workDir/$Sample.recal.sorted.bwa.$BUILD.bam $(cat $tmpDir/$Sample.inputBAM.txt)
 
 # Clean up temporary .bam files
 if [ -f "$workDir/$Sample.recal.sorted.bwa.$BUILD.bam" ]; then

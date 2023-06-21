@@ -2,9 +2,7 @@
 
 #SBATCH -J gatherVCFs
 #SBATCH -o /hpcfs/users/%u/log/gatherGVCFs-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=01:30:00
@@ -18,7 +16,9 @@
 # A script to merge gVCF files together for later genotyping
 ## List modules and file paths ##
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b" "SAMtools/1.10-foss-2016b")
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
 
 usage()
 {

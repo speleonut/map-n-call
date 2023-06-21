@@ -1,9 +1,7 @@
 #!/bin/bash
 #SBATCH -J BAM2fq
 #SBATCH -o /hpcfs/users/%u/log/bam2fq.samtools.slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch                        # partition (this is the queue your job will be added to)
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 8                            # number of cores (here uses 8)
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
@@ -16,6 +14,9 @@
 
 #Script Paths
 userDir=/hpcfs/users/${USER}
+module purge
+module use /apps/skl/modules/all
+modList=("SAMtools/1.17-GCCcore-11.2.0")
 
 # bam2fq.samtools.sh
 usage()
@@ -62,21 +63,21 @@ while [ "$1" != "" ]; do
         -i )    shift
                 inputFile=$1
                 ;;
-        -h | --help )   module load arch/haswell
-                        module load SAMtools
-                        samtools sort
-                        samtools fastq
-                        module unload SAMtools
-                        module unload arch/haswell
+        -h | --help )   for mod in "${modList[@]}"; do
+                            module load $mod
+                        done
+                        samtools view
+                        module unload ${modList[1]}
+                        module unload ${modList[0]}
                         usage
                         exit 0
                         ;;
-        * )     module load arch/haswell
-                module load SAMtools
-                samtools sort
-                samtools fastq
-                module unload SAMtools
-                module unload arch/haswell
+        * )     for mod in "${modList[@]}"; do
+                    module load $mod
+                done
+                samtools view
+                module unload ${modList[1]}
+                module unload ${modList[0]}
                 usage
                 exit 1
     esac
@@ -117,8 +118,9 @@ if [ ! -d "$tmpDir" ]; then
 fi
 
 # Load modules
-module load arch/haswell
-module load SAMtools
+for mod in "${modList[@]}"; do
+    module load $mod
+done
 
 # Revert BAMs to fastq
 samtools sort -l 0 -m 4G -n -@8 -T$tmpDir ${bamFile} |\

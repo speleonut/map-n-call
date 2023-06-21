@@ -2,9 +2,7 @@
 
 #SBATCH -J GATKHC
 #SBATCH -o /hpcfs/users/%u/log/GATK4HC-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=07:00:00
@@ -19,7 +17,9 @@
 
 ## List modules and file paths ##
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "Java/1.8.0_121")
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 
 usage()
 {

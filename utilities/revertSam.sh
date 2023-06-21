@@ -1,9 +1,7 @@
 #!/bin/bash
 #SBATCH -J MAS
 #SBATCH -o /hpcfs/users/%u/log/revertSam.slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch            	                            # partition (this is the queue your job will be added to)
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1                                                # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 4                                                # number of cores (here uses 2)
 #SBATCH --time=08:00:00                                     # time allocation, which has the format (D-HH:MM)
@@ -17,7 +15,9 @@
 # revertSam.sh
 # Set location of picard.jar
 PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
-modList=("arch/haswell" "Java/10.0.1")
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 usage()
 {
 echo "# revertSam.sh Sort a BAM by read name then strip mapping info.  The result will be an unmapped BAM file.

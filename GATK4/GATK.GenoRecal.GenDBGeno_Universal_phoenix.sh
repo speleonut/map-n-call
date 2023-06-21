@@ -2,8 +2,7 @@
 
 #SBATCH -J GATKGeno
 #SBATCH -o /hpcfs/users/%u/log/genDBGeno-slurm-%j.out
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,skylakehm,v100cpu
 #SBATCH -N 1
 #SBATCH -n 6
 #SBATCH --time=24:00:00
@@ -16,8 +15,10 @@
 
 # See usage for description and history
 # Script variables (set and forget)
-modList=("arch/haswell" "Java/1.8.0_121")
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 
 usage()
 {
