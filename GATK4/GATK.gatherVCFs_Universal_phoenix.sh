@@ -114,7 +114,12 @@ bgzip $gVcfFolder/$Sample.$BUILD.snps.g.vcf
 tabix $gVcfFolder/$Sample.$BUILD.snps.g.vcf.gz
 
 ## Check for bad things and clean up
-grep ERROR $workDir/$Sample.pipeline.log > $workDir/$Sample.pipeline.ERROR.log
+if [ ! -f "$gVcfFolder/$Sample.$BUILD.snps.g.vcf.gz.tbi" ]; then
+    echo "##ERROR: Some bad things went down while this script was running please see $workDir/$Sample.pipeline.ERROR.log and prepare for disappointment."
+    exit 1
+fi
+
+grep -i ERROR $workDir/$Sample.pipeline.log > $workDir/$Sample.pipeline.ERROR.log
 if [ -z $(cat $workDir/$Sample.pipeline.ERROR.log) ]; then
 	rm $workDir/$Sample.pipeline.ERROR.log
 	rm -r $tmpDir

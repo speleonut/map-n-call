@@ -169,8 +169,13 @@ java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar ApplyV
 bgzip ${workDir}/${outPrefix}.${BUILD}.vcf
 tabix ${workDir}/${outPrefix}.${BUILD}.vcf.gz
 
-grep ERROR $workDir/$outPrefix.pipeline.log > $workDir/$outPrefix.pipeline.ERROR.log
+## Check for bad things and clean up
+if [ ! -f "${workDir}/${outPrefix}.${BUILD}.vcf.gz.tbi" ]; then
+    echo "##ERROR: Some bad things went down while this script was running please see $workDir/$Sample.pipeline.ERROR.log and prepare for disappointment."
+    exit 1
+fi
 
+grep -i ERROR $workDir/$outPrefix.pipeline.log > $workDir/$outPrefix.pipeline.ERROR.log
 if [ -z $(cat $workDir/$outPrefix.pipeline.ERROR.log) ]; then
 	rm $workDir/$outPrefix.pipeline.ERROR.log
     rm -r $tmpDir
