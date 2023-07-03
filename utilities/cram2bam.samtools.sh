@@ -176,7 +176,7 @@ samtools index ${outDir}/${baseBamFile}.bam
 if "$delBamFile"; then
     if [ -f "${outDir}/${baseBamFile}.bam.bai" ]; then
         rm ${bamFile[SLURM_ARRAY_TASK_ID]} ${baiFile}
-        echo "## INFO: Original BAM and BAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
+        echo "## INFO: Original CRAM and CRAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
     else
         echo "## ERROR: Something may have gone wrong during the conversion, the .bai file was not created.  Your original CRAM file has not been deleted"
         exit 1
