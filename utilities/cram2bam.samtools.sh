@@ -174,7 +174,7 @@ samtools index ${outDir}/${baseBamFile}.bam
 
 # Check everything went OK and clean up the old CRAM file or suggest deletion
 if "$delBamFile"; then
-    if [ -f "${outDir}/${baseBamFile}.cram.bai" ]; then
+    if [ -f "${outDir}/${baseBamFile}.bam.bai" ]; then
         rm ${bamFile[SLURM_ARRAY_TASK_ID]} ${baiFile}
         echo "## INFO: Original BAM and BAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
     else
