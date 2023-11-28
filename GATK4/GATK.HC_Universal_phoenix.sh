@@ -2,7 +2,7 @@
 
 #SBATCH -J GATKHC
 #SBATCH -o /hpcfs/users/%u/log/GATK4HC-slurm-%j.out
-#SBATCH -p skylake,icelake,skylakehm,v100cpu
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=07:00:00

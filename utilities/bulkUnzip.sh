@@ -2,8 +2,7 @@
 #SBATCH -J getHugeBro
 #SBATCH -o /hpcfs/users/%u/log/gunzip.slurm-%j.out
 
-#SBATCH -A robinson
-#SBATCH -p batch                        # partition (this is the queue your job will be added to)
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 1                            # number of cores (here uses 8)
 #SBATCH --time=08:00:00                 # time allocation, which has the format (D-HH:MM)

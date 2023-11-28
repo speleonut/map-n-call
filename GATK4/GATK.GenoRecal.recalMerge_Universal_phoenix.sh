@@ -2,7 +2,7 @@
 
 #SBATCH -J recal_merge
 #SBATCH -o /hpcfs/users/%u/log/recalMerge-slurm-%j.out
-#SBATCH -p skylake,icelake,skylakehm,v100cpu
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=06:00:00

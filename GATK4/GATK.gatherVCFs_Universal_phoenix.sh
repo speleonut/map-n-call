@@ -2,7 +2,7 @@
 
 #SBATCH -J gatherVCFs
 #SBATCH -o /hpcfs/users/%u/log/gatherGVCFs-slurm-%j.out
-#SBATCH -p skylake,icelake,skylakehm,v100cpu
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=01:30:00

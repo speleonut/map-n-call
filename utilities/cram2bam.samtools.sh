@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J CRAM2BAM
 #SBATCH -o /hpcfs/users/%u/log/cram2bam.samtools.slurm-%j.out
-#SBATCH -p skylake,icelake,skylakehm,v100cpu
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 8                            # number of cores (here uses 8)
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)

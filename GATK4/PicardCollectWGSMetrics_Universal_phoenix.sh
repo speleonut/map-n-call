@@ -2,7 +2,7 @@
 
 #SBATCH -J WGSMetrics
 #SBATCH -o /hpcfs/users/%u/log/collectWGSmetrics-slurm-%j.out
-#SBATCH -p skylake,icelake,skylakehm,v100cpu
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=08:00:00
