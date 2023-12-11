@@ -152,7 +152,7 @@ esac
 BWAjob=$(echo $BWAjob | cut -d" " -f4)
 BQSRjob=`sbatch --export=ALL --dependency=afterok:${BWAjob} $scriptDir/GATK4/GATK.BQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 BQSRjob=$(echo $BQSRjob | cut -d" " -f4)
-ApplyBQSRJob=`sbatch --array=0-23 --export=ALL --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+ApplyBQSRJob=`sbatch --array=0-23%4 --export=ALL --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 ApplyBQSRJob=$(echo $ApplyBQSRJob | cut -d" " -f4)
 MergeJob=`sbatch --export=ALL --dependency=afterok:${ApplyBQSRJob} $scriptDir/GATK4/sambamba.Merge_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 MergeJob=$(echo $MergeJob | cut -d" " -f4)
