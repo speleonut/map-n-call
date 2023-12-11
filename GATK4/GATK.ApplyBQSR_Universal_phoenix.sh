@@ -109,11 +109,17 @@ done
 # You should only run ApplyBQSR with the covariates table created from the input BAM
  
 cd $tmpDir
-java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar ApplyBQSR \
--R $GATKREFPATH/$BUILD/$GATKINDEX \
--I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
--L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
--bqsr $tmpDir/$Sample.recal.grp \
---static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
---emit-original-quals true \
--O ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log 2>&1
+if [ -f "${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam.bai" ]; then # Check if this is a re-run
+    echo "## INFO: The file ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam.bai was detected suggesting this genome segment was completed successfully.
+Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log
+    exit 0
+else
+    java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar ApplyBQSR \
+        -R $GATKREFPATH/$BUILD/$GATKINDEX \
+        -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
+        -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
+        -bqsr $tmpDir/$Sample.recal.grp \
+        --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
+        --emit-original-quals true \
+        -O ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log 2>&1
+fi
