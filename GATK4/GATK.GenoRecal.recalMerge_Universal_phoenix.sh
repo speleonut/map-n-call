@@ -18,7 +18,7 @@
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 module purge
 module use /apps/skl/modules/all
-modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0" "R/4.0.3")
+modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0") # "R/4.3.1-foss-2021b" just have to do without this for now as Java module is incompatible with R
 
 usage()
 {
