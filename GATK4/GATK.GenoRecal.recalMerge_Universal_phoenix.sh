@@ -18,7 +18,7 @@
 scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 module purge
 module use /apps/skl/modules/all
-modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0") # "R/4.3.1-foss-2021b" just have to do without this for now as Java module is incompatible with R
+modList=("R/4.3.1-foss-2021b" "Java/17.0.6" "HTSlib/1.17-GCC-11.2.0")
 
 usage()
 {
@@ -171,15 +171,15 @@ tabix ${workDir}/${outPrefix}.${BUILD}.vcf.gz
 
 ## Check for bad things and clean up
 if [ ! -f "${workDir}/${outPrefix}.${BUILD}.vcf.gz.tbi" ]; then
-    echo "##ERROR: Some bad things went down while this script was running please see $workDir/$Sample.pipeline.ERROR.log and prepare for disappointment."
+    echo "##ERROR: Some bad things went down while this script was running please see $workDir/$outPrefix.pipeline.ERROR.log and prepare for disappointment."
     exit 1
 fi
 
 grep -i ERROR $workDir/$outPrefix.pipeline.log > $workDir/$outPrefix.pipeline.ERROR.log
-if [ -z $(cat $workDir/$outPrefix.pipeline.ERROR.log) ]; then
+if [ -z "$(cat $workDir/$outPrefix.pipeline.ERROR.log)" ]; then
 	rm $workDir/$outPrefix.pipeline.ERROR.log
     rm -r $tmpDir
 else 
-	echo "Some bad things went down while this script was running please see $outPrefix.pipeline.ERROR.log and prepare for disappointment."
+	echo "Some bad things went down while this script was running please see $workDir/$outPrefix.pipeline.ERROR.log and prepare for disappointment."
 	exit 1
 fi
