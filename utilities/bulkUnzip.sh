@@ -53,9 +53,9 @@ while [ "$1" != "" ]; do
 done
 
 # Check that your script has everything it needs to start.
-if [ ! -z "$inputFile" ]; then
+if [ -z "$inputFile" ]; then
     usage
-    echo "#ERROR: You need to specify -i /path/to/input-file
+    echo "#ERROR: You need to specify -i /path/to/input-file"
     exit 1
 fi
 
