@@ -16,6 +16,7 @@
 # A script to call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
 ## List modules and file paths ##
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")

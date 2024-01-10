@@ -15,16 +15,7 @@
 
 # A script to collect alignment metrics from WGS bam files using Picard
 ## List modules and file paths ##
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
-    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
-    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
-    source ${configDir}/BWA-GATKHC.environment.cfg
-    if [ ! -d "${logDir}" ]; then
-        mkdir -p ${logDir}
-        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
-    fi
-fi
-
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
@@ -79,6 +70,16 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"

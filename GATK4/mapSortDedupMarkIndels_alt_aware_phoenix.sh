@@ -15,6 +15,7 @@
 
 # Script for mapping Illumina pair-end sequence data
 ## Set hard coded paths and variables ##
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")

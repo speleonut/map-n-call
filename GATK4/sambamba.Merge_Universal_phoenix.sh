@@ -15,15 +15,7 @@
 
 # A script to merge bam files of the same Sample from multiple genomic intervals
 ## List modules and file paths ##
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
-    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
-    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
-    source ${configDir}/BWA-GATKHC.environment.cfg
-    if [ ! -d "${logDir}" ]; then
-        mkdir -p ${logDir}
-        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
-    fi
-fi
+source ${enviroCfg}
 
 usage()
 {
