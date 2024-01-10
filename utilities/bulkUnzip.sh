@@ -13,9 +13,6 @@
 #SBATCH --mail-type=FAIL                # Type of email notifications will be sent (here set to FAIL, which means an email will be sent when the job is fail to complete)
 #SBATCH --mail-user=%u@adelaide.edu.au  # Email to which notification will be sent
 
-#Script Paths
-userDir=/hpcfs/users/${USER}
-
 usage()
 {
 echo "# bulkUnzip.sh useful for when other crappy software does not handle this for you.
@@ -62,5 +59,5 @@ fi
 module load gzip/1.10-GCCcore-11.2.0
 readarray -t fileToDecompress < $inputFile
 
-# When a big file comes along, you must zip it
+# Skywalker: "I can't. It's too big."" Yoda: "Size matters not. Look at me. Judge me by my size, do you? Hmm? Hmm."
 gunzip ${fileToDecompress[$SLURM_ARRAY_TASK_ID]}

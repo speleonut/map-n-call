@@ -13,9 +13,6 @@
 #SBATCH --mail-type=FAIL                # Type of email notifications will be sent (here set to FAIL, which means an email will be sent when the job is fail to complete)
 #SBATCH --mail-user=%u@adelaide.edu.au  # Email to which notification will be sent
 
-#Script Paths
-userDir=/hpcfs/users/${USER}
-
 # bulkGzip.sh
 usage()
 {
