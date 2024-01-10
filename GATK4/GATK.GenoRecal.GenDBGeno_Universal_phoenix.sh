@@ -15,6 +15,7 @@
 
 # See usage for description and history
 # Script variables (set and forget)
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")

@@ -15,6 +15,7 @@
 
 # A script to merge gVCF files together for later genotyping
 ## List modules and file paths ##
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")

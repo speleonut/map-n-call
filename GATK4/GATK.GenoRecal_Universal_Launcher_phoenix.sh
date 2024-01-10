@@ -2,7 +2,8 @@
 # This is a coordinator script for genotyping of gVGFs with GATK4 and subsequent merging of the produced VCFs
 whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
 configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
-source ${configDir}/BWA-GATKHC.environment.cfg
+enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
+source ${enviroCfg}
 
 if [ ! -d "${logDir}" ]; then
     mkdir -p ${logDir}
@@ -87,6 +88,6 @@ if [ -z "$sampleNameMap" ]; then #If sampleNameMap is not supplied try to find s
 fi
 
 ## Submit Jobs ##
-genotypeJob=`sbatch --array=0-23 --export=ALL $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
+genotypeJob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
 genotypeJob=$(echo $genotypeJob | cut -d" " -f4)
-sbatch --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}
+sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}

@@ -3,12 +3,33 @@
 ## Hard coded paths for your system should be set in configs/BWA-GATKHC.environment.cfg ##
 whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
 configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
-source ${configDir}/BWA-GATKHC.environment.cfg
+enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
+source ${enviroCfg}
 
 if [ ! -d "${logDir}" ]; then
     mkdir -p ${logDir}
     echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
 fi
+
+test_genome_build() {
+case "${BUILD}" in
+    "hs38DH" | "GRCh38_full_analysis_set" )    genomeType="has_alt_contigs"
+                ;;
+    "hs37d5" | "ucsc.hg19" )    genomeType="no_alt_contigs"
+                ;;
+    "CHM13v2" )    genomeType="no_alt_contigs"
+                ;;
+    "" )        genomeType="has_alt_contigs"
+                Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
+                echo "## WARN: Genome build was not set, the default configuration BWA-GATKHC.hs38DH_phoenix.cfg will be used."
+                ;;
+    * )         echo "## ERROR: The genome build ${BUILD} was not recognized: Available options are: hs38DH, GRCh38_full_analysis_set, hs37d5, ucsc.hg19 and CHM13v2"
+                echo "You can add new genomes by editing the test_genome_build function in the file configs/BWA-GATKHC.environment.cfg"
+                echo "You should also create a config file and the appropriate GATK reference files for your new genome similar to those in the configs/ directory"
+                exit 1
+                ;;
+esac
+}
 
 usage()
 {
@@ -133,21 +154,21 @@ fi
 ## Launch the job chain ##
 test_genome_build
 case "${genomeType}" in
-    "has_alt_contigs" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_alt_aware_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
+    "has_alt_contigs" ) BWAjob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/mapSortDedupMarkIndels_alt_aware_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
         ;;
-    "no_alt_contigs" ) BWAjob=`sbatch --export=ALL $scriptDir/GATK4/mapSortDedupMarkIndels_no_alt_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
+    "no_alt_contigs" ) BWAjob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/mapSortDedupMarkIndels_no_alt_phoenix.sh  -c $Config -p ${outPrefix} -s $seqPath -S $Sample -o $workDir -L $LB -I $ID`
         ;;
     * ) echo "## ERROR: Genome build ${BUILD} corresponds with unrecognised pipeline version ${genomeType} the following config file is in use ${Config}"
         exit 1
 esac
 BWAjob=$(echo $BWAjob | cut -d" " -f4)
-BQSRjob=`sbatch --export=ALL --dependency=afterok:${BWAjob} $scriptDir/GATK4/GATK.BQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+BQSRjob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${BWAjob} $scriptDir/GATK4/GATK.BQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 BQSRjob=$(echo $BQSRjob | cut -d" " -f4)
-ApplyBQSRJob=`sbatch --array=0-23%4 --export=ALL --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+ApplyBQSRJob=`sbatch --array=0-23%4 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 ApplyBQSRJob=$(echo $ApplyBQSRJob | cut -d" " -f4)
-MergeJob=`sbatch --export=ALL --dependency=afterok:${ApplyBQSRJob} $scriptDir/GATK4/sambamba.Merge_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+MergeJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${ApplyBQSRJob} $scriptDir/GATK4/sambamba.Merge_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 MergeJob=$(echo $MergeJob | cut -d" " -f4)
-GATKHCjob=`sbatch --array=0-23 --export=ALL --dependency=afterok:${MergeJob} $scriptDir/GATK4/GATK.HC_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+GATKHCjob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/GATK.HC_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 GATKHCjob=$(echo $GATKHCjob | cut -d" " -f4)
-sbatch --export=ALL --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir
-sbatch --export=ALL --dependency=afterok:${GATKHCjob} $scriptDir/GATK4/GATK.gatherVCFs_Universal_phoenix.sh -c $Config -S $Sample -o $workDir
+sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir
+sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${GATKHCjob} $scriptDir/GATK4/GATK.gatherVCFs_Universal_phoenix.sh -c $Config -S $Sample -o $workDir

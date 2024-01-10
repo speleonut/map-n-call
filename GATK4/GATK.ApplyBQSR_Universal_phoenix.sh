@@ -16,6 +16,7 @@
 # A script to apply base quality score recalibration using the GATK v4.x best practices
 
 ## List modules and file paths ##
+source ${enviroCfg}
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
