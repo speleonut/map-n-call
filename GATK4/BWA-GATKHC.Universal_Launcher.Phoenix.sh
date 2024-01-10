@@ -1,28 +1,14 @@
 #!/bin/bash
 # This is the master script that coordinates job submission for the neurogenetics BWA-GATK4 haplotype caller pipeline.
-## Set hard-coded paths and define functions ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-logDir="/hpcfs/users/${USER}/log"
+## Hard coded paths for your system should be set in configs/BWA-GATKHC.environment.cfg ##
+whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+source ${configDir}/BWA-GATKHC.environment.cfg
 
 if [ ! -d "${logDir}" ]; then
     mkdir -p ${logDir}
     echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
 fi
-
-test_genome_build() {
-case "${BUILD}" in
-    "hs38DH" | "GRCh38_full_analysis_set" )    genomeType="has_alt_contigs"
-                ;;
-    "hs37d5" | "ucsc.hg19" )    genomeType="no_alt_contigs"
-                ;;
-    "CHM13v2" )    genomeType="no_alt_contigs"
-                ;;
-    * )         genomeType="has_alt_contigs"
-                Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
-                echo "## WARN: Genome build ${BUILD} not recognized, the default pipeline for GRCh38 / hg38 will be used."
-                ;;
-esac
-}
 
 usage()
 {
@@ -37,7 +23,7 @@ echo "# This is the master script that coordinates job submission for primarily 
 # -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.gz 
 # -s	REQUIRED. Path to the sequence files
 # -c	OPTIONAL. /path/to/config.cfg. A default config will be used if this is not specified.  The config contains all of the stuff that used to be set in the top part of our scripts
-# -o	OPTIONAL. Path to where you want to find your file output (if not specified an output directory /hpcfs/users/${USER}/BWA-GATK/\${Sample} is used)
+# -o	OPTIONAL. Path to where you want to find your file output (if not specified an output directory ${userDir}/BWA-GATK/\${Sample} is used)
 # -S	OPTIONAL. Sample name which will go into the BAM header and VCF header. If not specified, then will be set the same as -p but it is recommended to set this if you can
 # -L	OPTIONAL. Identifier for the sequence library (to go into the @RG line plain text, eg. MySeqProject20170317-PintOGuiness). Default \"IlluminaGenome\"
 # -I	OPTIONAL. ID for the sequence (to go into the @RG line). If not specified the script will make one up from the first read header, and Sample name
@@ -132,11 +118,16 @@ if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
 	echo "## INFO: Using ${outPrefix} for Sample name"
 fi
 if [ -z "$workDir" ]; then # If no output directory then set and create a default directory
-	workDir=/hpcfs/users/${USER}/BWA-GATKHC/$Sample
+	workDir=${userDir}/alignments/$Sample
 	echo "## INFO: Using $workDir as the output directory"
 fi
 if [ ! -d "$workDir" ]; then
 	mkdir -p $workDir
+fi
+
+tmpDir=${tmpDir}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
+if [ ! -d "${tmpDir}" ]; then
+	mkdir -p ${tmpDir}
 fi
 
 ## Launch the job chain ##

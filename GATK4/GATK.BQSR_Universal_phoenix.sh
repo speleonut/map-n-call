@@ -16,11 +16,9 @@
 # A script to calculate base quality score recalibrations using the GATK v4.x best practices
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
-
 
 usage()
 {
@@ -71,6 +69,17 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
@@ -82,11 +91,10 @@ if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	exit 1
 fi
 if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+	workDir=${userDir}/alignments/${Sample}
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -99,14 +107,14 @@ done
 ## Start data processing ##
 cd $tmpDir
 # Base quality score recalibration
-java -Xmx96g -Djava.io.tmpdir=$tmpDir/ -jar $GATKPATH/GenomeAnalysisTK.jar BaseRecalibrator \
+$GATKPATH/gatk --java-options 'Xmx=96g Djava.io.tmpdir=$tmpDir/' BaseRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
 --known-sites $GATKREFPATH/$BUILD/$DBSNP \
 --known-sites $GATKREFPATH/$BUILD/${OneKg_INDELS} \
 --known-sites $GATKREFPATH/$BUILD/${Mills_INDELS} \
 --output $tmpDir/$Sample.recal.grp \
- >> $workDir/$Sample.pipeline.log 2>&1
+ >> $workDir/${Sample}.${BUILD}.pipeline.log 2>&1
 
 echo "
 # BQSR metrics" >> $workDir/$Sample.Stat_Summary.txt

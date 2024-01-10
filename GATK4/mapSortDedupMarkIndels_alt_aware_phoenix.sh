@@ -15,14 +15,6 @@
 
 # Script for mapping Illumina pair-end sequence data
 ## Set hard coded paths and variables ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-logDir="/hpcfs/users/${USER}/log"
-sambambaProg=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/sambamba-0.8.2-linux-amd64-static
-
-if [ ! -d "${logDir}" ]; then
-    mkdir -p ${logDir}
-    echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
-fi
 module purge
 module use /apps/skl/modules/all
 modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
@@ -32,7 +24,7 @@ echo "# Script for mapping Illumina pair-end sequence data
 # Requires: BWA 0.7.x, samtools, sambamba
 # This script assumes your sequence files are gzipped
 #
-# Usage $0 -p file_prefix -s /path/to/sequences -o /path/to/output -c /path/to/config.cfg -S Sample -L LIBRARY -I ID] | [ - h | --help ]
+# Usage: sbatch $0 -p file_prefix -s /path/to/sequences -o /path/to/output -c /path/to/config.cfg -S Sample -L LIBRARY -I ID] | [ - h | --help ]
 #
 # Options
 # -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.gz 
@@ -91,6 +83,20 @@ while [ "$1" != "" ]; do
 	esac
 	shift
 done
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
+        Sample=$outPrefix
+    fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
@@ -112,7 +118,7 @@ if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
 	echo "##INFO: Using $outPrefix for Sample name"
 fi
 if [ -z "$workDir" ]; then # If no output directory then use default directory
-    workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+    workDir=${userDir}/alignments/$Sample
 fi
 
 if [ -z "$LB" ]; then # If library not specified then use "IlluminaGenome"
@@ -149,12 +155,11 @@ if [ -z $ID ]; then
 fi
 
 ## Create essential directories ##
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
 
-if [ ! -d "${workDir}"} ]; then
+if [ ! -d "${workDir}" ]; then
     mkdir -p $workDir
     echo "##INFO: Using $workDir as the output directory"
 fi

@@ -1,11 +1,17 @@
 #!/bin/bash
-# This is a coordinator script for genotypeing of gVGFs with GATK4 and subsequent merging of the produced VCFs
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-tmpDir="/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}" # Use a tmp directory for all of the GATK and samtools temp files
+# This is a coordinator script for genotyping of gVGFs with GATK4 and subsequent merging of the produced VCFs
+whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+source ${configDir}/BWA-GATKHC.environment.cfg
+
+if [ ! -d "${logDir}" ]; then
+    mkdir -p ${logDir}
+    echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+fi
 
 usage()
 {
-echo"
+echo "
 # Coordinator script for genotype recalibration and subsequent VCF merging
 #
 # Options:

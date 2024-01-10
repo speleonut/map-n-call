@@ -16,7 +16,6 @@
 # A script to apply base quality score recalibration using the GATK v4.x best practices
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
@@ -70,6 +69,18 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
@@ -81,11 +92,10 @@ if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	exit 1
 fi
 if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+	workDir=${userDir}/alignments/$Sample
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -111,15 +121,15 @@ done
 cd $tmpDir
 if [ -f "${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai" ]; then # Check if this is a re-run
     echo "## INFO: The file ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai was detected suggesting this genome segment was completed successfully.
-Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log
+Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log
     exit 0
 else
-    java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar ApplyBQSR \
+    $GATKPATH/gatk --java-options 'Xmx=6g Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}' ApplyBQSR \
         -R $GATKREFPATH/$BUILD/$GATKINDEX \
         -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
         -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
         -bqsr $tmpDir/$Sample.recal.grp \
         --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
         --emit-original-quals true \
-        -O ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log 2>&1
+        -O ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log 2>&1
 fi

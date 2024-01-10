@@ -16,7 +16,6 @@
 # A script to call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
@@ -70,6 +69,17 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
@@ -81,11 +91,10 @@ if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	exit 1
 fi
 if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+	workDir=${userDir}/alignments/${Sample}
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -112,4 +121,4 @@ java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATK
 --min-base-quality-score 20 \
 --native-pair-hmm-threads 10 \
 -ERC GVCF \
--O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.snps.g.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log 2>&1
+-O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.snps.g.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log 2>&1

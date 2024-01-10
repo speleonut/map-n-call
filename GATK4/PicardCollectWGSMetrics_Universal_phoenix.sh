@@ -15,7 +15,16 @@
 
 # A script to collect alignment metrics from WGS bam files using Picard
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
+if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+fi
+
 module purge
 module use /apps/skl/modules/all
 modList=("Java/17.0.6")
@@ -81,11 +90,10 @@ if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	exit 1
 fi
 if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+	workDir=${userDir}/alignments/$Sample
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
-tmpDir=/hpcfs/users/${USER}/tmp/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -97,7 +105,7 @@ done
 
 ## Start of the script ##
 cd $workDir
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $PICARDPATH/picard.jar CollectWgsMetrics \
+$GATKPATH/gatk --java-options 'Xmx=8g Djava.io.tmpdir=$tmpDir' CollectWgsMetrics \
 INPUT=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
 OUTPUT=$workDir/$Sample.$BUILD.WGS.Metrics \
 REFERENCE_SEQUENCE=$GATKREFPATH/$BUILD/$GATKINDEX \
