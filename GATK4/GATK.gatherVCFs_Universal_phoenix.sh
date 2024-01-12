@@ -115,7 +115,7 @@ cat $tmpDir/*.${Sample}.${BUILD}.pipeline.log >> $workDir/${Sample}.${BUILD}.pip
 find *.$Sample.snps.g.vcf > $tmpDir/$Sample.gvcf.list.txt
 sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$Sample.gvcf.list.txt > $tmpDir/$Sample.inputGVCF.txt
 
-$GATKPATH/gatk --java-options '-Xmx=8g -Djava.io.tmpdir=$tmpDir' GatherVcfs  \
+$GATKPATH/gatk --java-options '-Xmx8g -Djava.io.tmpdir=$tmpDir' GatherVcfs  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 $(cat $tmpDir/$Sample.inputGVCF.txt) \
 -O $gVcfFolder/$Sample.$BUILD.snps.g.vcf >> $workDir/${Sample}.${BUILD}.pipeline.log  2>&1
