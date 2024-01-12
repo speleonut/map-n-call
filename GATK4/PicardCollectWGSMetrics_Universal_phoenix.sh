@@ -107,7 +107,7 @@ done
 
 ## Start of the script ##
 cd $workDir
-$GATKPATH/gatk --java-options '-Xmx8g -Djava.io.tmpdir=$tmpDir' CollectWgsMetrics \
+$GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" CollectWgsMetrics \
 INPUT=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
 OUTPUT=$workDir/$Sample.$BUILD.WGS.Metrics \
 REFERENCE_SEQUENCE=$GATKREFPATH/$BUILD/$GATKINDEX \

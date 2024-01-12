@@ -108,7 +108,7 @@ done
 ## Start data processing ##
 cd $tmpDir
 # Base quality score recalibration
-$GATKPATH/gatk --java-options '-Xmx96g -Djava.io.tmpdir=${tmpDir}/' BaseRecalibrator \
+$GATKPATH/gatk --java-options "-Xmx96g -Djava.io.tmpdir=$tmpDir" BaseRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
 --known-sites $GATKREFPATH/$BUILD/$DBSNP \

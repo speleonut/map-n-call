@@ -114,7 +114,7 @@ done
 ## Start of the script ##
  
 cd $tmpDir
-$GATKPATH/gatk --java-options '-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}' HaplotypeCaller \
+$GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" HaplotypeCaller \
 -I $workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \

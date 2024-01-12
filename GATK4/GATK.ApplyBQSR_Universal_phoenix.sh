@@ -125,7 +125,7 @@ if [ -f "${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai" ]
 Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log
     exit 0
 else
-    $GATKPATH/gatk --java-options '-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}' ApplyBQSR \
+    $GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" ApplyBQSR \
         -R $GATKREFPATH/$BUILD/$GATKINDEX \
         -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
         -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \

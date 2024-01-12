@@ -109,7 +109,7 @@ cat $tmpDir/*.${outPrefix}.${BUILD}.pipeline.log >> $workDir/${outPrefix}.${BUIL
 #Merge and sort VCFs from the previous step
 find $tmpDir/*.$outPrefix.sites.only.vcf > $tmpDir/$outPrefix.vcf.list.txt
 sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' SortVcf  \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" SortVcf  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 --MAX_RECORDS_IN_RAM 2000000 \
 --TMP_DIR $tmpDir \
@@ -118,7 +118,7 @@ $(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
 
 find $tmpDir/*.$outPrefix.vcf > $tmpDir/$outPrefix.vcf.list.txt
 sed 's,^,-I ,g' $tmpDir/$outPrefix.vcf.list.txt > $tmpDir/$outPrefix.input.vcf.list.txt
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' SortVcf  \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" SortVcf  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 --MAX_RECORDS_IN_RAM 2000000 \
 --TMP_DIR $tmpDir \
@@ -126,7 +126,7 @@ $(cat ${tmpDir}/$outPrefix.input.vcf.list.txt) \
 -O ${tmpDir}/${outPrefix}.merge.vcf >> ${workDir}/${outPrefix}.${BUILD}.pipeline.log  2>&1
 
 #Generate recalibration data for INDELs
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' VariantRecalibrator \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
 --max-gaussians 4 \
@@ -141,7 +141,7 @@ $GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' VariantRecalibr
 --tranches-file $tmpDir/$outPrefix.indel.tranches >> $workDir/${outPrefix}.${BUILD}.pipeline.log 2>&1
 
 # Apply recalibration for INDELs
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' ApplyVQSR \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.merge.vcf \
 -mode INDEL \
@@ -151,7 +151,7 @@ $GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' ApplyVQSR \
 -O $tmpDir/$outPrefix.indel.recal.vcf >> $workDir/${outPrefix}.${BUILD}.pipeline.log 2>&1
 
 # Generate Recalibration data for SNPs
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' VariantRecalibrator \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" VariantRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/${outPrefix}.merge.sites.only.vcf \
 --max-gaussians 4 \
@@ -167,7 +167,7 @@ $GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' VariantRecalibr
 --tranches-file $tmpDir/$outPrefix.snp.tranches >> $workDir/${outPrefix}.${BUILD}.pipeline.log 2>&1
 
 # Apply recalibration for SNPs
-$GATKPATH/gatk --java-options '-Xmx32g -Djava.io.tmpdir=$tmpDir' ApplyVQSR \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" ApplyVQSR \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -V $tmpDir/$outPrefix.indel.recal.vcf \
 -mode SNP \
