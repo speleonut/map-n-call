@@ -66,11 +66,10 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
     source ${configDir}/BWA-GATKHC.environment.cfg
-    tmpDir=${tmpDir}/${Sample}
     if [ ! -d "${logDir}" ]; then
         mkdir -p ${logDir}
         echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
@@ -91,6 +90,7 @@ if [ -z "$workDir" ]; then # If no output directory then use default directory
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
+tmpDir=${tmpDir}/${Sample}
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi

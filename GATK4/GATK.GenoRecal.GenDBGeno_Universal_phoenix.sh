@@ -74,11 +74,10 @@ while [ "$1" != "" ]; do
         esac
         shift
 done
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
     source ${configDir}/BWA-GATKHC.environment.cfg
-    tmpDir=${tmpDir}/${outPrefix}
     if [ ! -d "${logDir}" ]; then
         mkdir -p ${logDir}
         echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
@@ -96,6 +95,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
     echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
 fi
 
+tmpDir=${tmpDir}/${outPrefix}
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -132,7 +132,7 @@ fi
 ## Start script ##
 cd ${tmpDir}
 
-$GATKPATH/gatk --java-options 'Xmx=32g Xms=32g Djava.io.tmpdir=$tmpDir' GenomicsDBImport \
+$GATKPATH/gatk --java-options '-Xmx=32g -Xms=32g -Djava.io.tmpdir=$tmpDir' GenomicsDBImport \
 --genomicsdb-workspace-path $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database \
 --genomicsdb-shared-posixfs-optimizations true \
 --batch-size 50 \
@@ -142,7 +142,7 @@ $GATKPATH/gatk --java-options 'Xmx=32g Xms=32g Djava.io.tmpdir=$tmpDir' Genomics
 --sample-name-map ${sampleNameMap} \
 --intervals $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-$GATKPATH/gatk --java-options 'Xmx=32g Djava.io.tmpdir=$tmpDir' GenotypeGVCFs \
+$GATKPATH/gatk --java-options '-Xmx=32g -Djava.io.tmpdir=$tmpDir' GenotypeGVCFs \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -D $GATKREFPATH/$BUILD/$DBSNP \
 -G AS_StandardAnnotation \
@@ -150,6 +150,6 @@ $GATKPATH/gatk --java-options 'Xmx=32g Djava.io.tmpdir=$tmpDir' GenotypeGVCFs \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 --merge-input-intervals >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-$GATKPATH/gatk --java-options 'Xmx=32g Djava.io.tmpdir=$tmpDir' MakeSitesOnlyVcf \
+$GATKPATH/gatk --java-options '-Xmx=32g -Djava.io.tmpdir=$tmpDir' MakeSitesOnlyVcf \
 -I $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.sites.only.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1

@@ -70,7 +70,7 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
     source ${configDir}/BWA-GATKHC.environment.cfg
@@ -95,6 +95,7 @@ if [ -z "$workDir" ]; then # If no output directory then use current directory
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
+tmpDir=${tmpDir}/${Sample}
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -106,7 +107,7 @@ done
 
 ## Start of the script ##
 cd $workDir
-$GATKPATH/gatk --java-options 'Xmx=8g Djava.io.tmpdir=$tmpDir' CollectWgsMetrics \
+$GATKPATH/gatk --java-options '-Xmx=8g -Djava.io.tmpdir=$tmpDir' CollectWgsMetrics \
 INPUT=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
 OUTPUT=$workDir/$Sample.$BUILD.WGS.Metrics \
 REFERENCE_SEQUENCE=$GATKREFPATH/$BUILD/$GATKINDEX \

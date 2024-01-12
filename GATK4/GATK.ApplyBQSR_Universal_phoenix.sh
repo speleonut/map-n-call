@@ -71,11 +71,10 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ -z ${scriptDir} ]; then # Test if the script was executed independently of the Universal Launcher script
+if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
     source ${configDir}/BWA-GATKHC.environment.cfg
-    tmpDir=${tmpDir}/${Sample}
     if [ ! -d "${logDir}" ]; then
         mkdir -p ${logDir}
         echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
@@ -97,6 +96,7 @@ if [ -z "$workDir" ]; then # If no output directory then use current directory
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
+tmpDir=${tmpDir}/${Sample}
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -125,7 +125,7 @@ if [ -f "${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai" ]
 Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log
     exit 0
 else
-    $GATKPATH/gatk --java-options 'Xmx=6g Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}' ApplyBQSR \
+    $GATKPATH/gatk --java-options '-Xmx=6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}' ApplyBQSR \
         -R $GATKREFPATH/$BUILD/$GATKINDEX \
         -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
         -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
