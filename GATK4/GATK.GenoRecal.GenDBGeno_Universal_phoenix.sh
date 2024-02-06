@@ -74,6 +74,12 @@ while [ "$1" != "" ]; do
         esac
         shift
 done
+
+if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
+    outPrefix=$(date "+%Y%m%d_%s")
+    echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
+fi
+
 if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
@@ -81,6 +87,10 @@ if [ -z "${scriptDir}" ]; then # Test if the script was executed independently o
     if [ ! -d "${logDir}" ]; then
         mkdir -p ${logDir}
         echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${outPrefix}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
     fi
 fi
 
@@ -90,15 +100,6 @@ if [ -z "$Config" ]; then # If no Config file specified use the default
 fi
 source $Config
 
-if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
-    outPrefix=$(date "+%Y%m%d_%s")
-    echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
-fi
-
-tmpDir=${tmpDir}/${outPrefix}
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
-fi
 if [ -z "$workDir" ]; then #If workDir not specified then output to the default directory
         workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD
         echo "## INFO: Using $workDir as the output directory"

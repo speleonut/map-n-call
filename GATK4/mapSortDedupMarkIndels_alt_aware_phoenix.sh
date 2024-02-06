@@ -84,6 +84,17 @@ while [ "$1" != "" ]; do
 	esac
 	shift
 done
+
+if [ -z "$outPrefix" ]; then # If no file prefix specified then do not proceed
+	usage
+	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
+	exit 1
+fi
+if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
+	Sample=$outPrefix
+	echo "##INFO: Using $outPrefix for Sample name"
+fi
+
 if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
@@ -95,6 +106,10 @@ if [ -z "${scriptDir}" ]; then # Test if the script was executed independently o
         mkdir -p ${logDir}
         echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
     fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
 fi
 
 if [ -z "$Config" ]; then # If no Config file specified use the default
@@ -103,19 +118,10 @@ if [ -z "$Config" ]; then # If no Config file specified use the default
 fi
 source $Config
 
-if [ -z "$outPrefix" ]; then # If no file prefix specified then do not proceed
-	usage
-	echo "#ERROR: You need to specify a file prefix (PREFIX) referring to your sequence files eg. PREFIX_R1.fastq.gz."
-	exit 1
-fi
 if [ -z "$seqPath" ]; then # If path to sequences not specified then do not proceed
 	usage
 	echo "#ERROR: You need to specify the path to your sequence files"
 	exit 1
-fi
-if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
-	Sample=$outPrefix
-	echo "##INFO: Using $outPrefix for Sample name"
 fi
 if [ -z "$workDir" ]; then # If no output directory then use default directory
     workDir=${userDir}/alignments/$Sample
@@ -155,11 +161,6 @@ if [ -z $ID ]; then
 fi
 
 ## Create essential directories ##
-
-tmpDir=${tmpDir}/${Sample}
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
-fi
 
 if [ ! -d "${workDir}" ]; then
     mkdir -p $workDir

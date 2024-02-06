@@ -48,6 +48,7 @@ echo "# This is the master script that coordinates job submission for primarily 
 # -S	OPTIONAL. Sample name which will go into the BAM header and VCF header. If not specified, then will be set the same as -p but it is recommended to set this if you can
 # -L	OPTIONAL. Identifier for the sequence library (to go into the @RG line plain text, eg. MySeqProject20170317-PintOGuiness). Default \"IlluminaGenome\"
 # -I	OPTIONAL. ID for the sequence (to go into the @RG line). If not specified the script will make one up from the first read header, and Sample name
+# --gpfs    OPTIONAL. Use /gpfs/users/$USER/tmp as your tmp directory for better read/write performance.
 # -h or --help	Prints this message.  Or if you got one of the options above wrong you'll be reading this too!
 # 
 # Original: Mark Corbett, 16/11/2017 
@@ -81,6 +82,9 @@ while [ "$1" != "" ]; do
 					;;
 		-I )			shift
 					ID=$1
+					;;
+		--gpfs )	shift
+					tmpDir="/gpfs/users/${USER}/tmp"
 					;;
 		-h | --help )		usage
 					exit 0
@@ -147,6 +151,7 @@ if [ ! -d "$workDir" ]; then
 fi
 
 tmpDir=${tmpDir}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
+echo "## INFO: Using ${tmpDir} as the tmp directory location."
 if [ ! -d "${tmpDir}" ]; then
 	mkdir -p ${tmpDir}
 fi
@@ -170,5 +175,8 @@ MergeJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependen
 MergeJob=$(echo $MergeJob | cut -d" " -f4)
 GATKHCjob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/GATK.HC_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 GATKHCjob=$(echo $GATKHCjob | cut -d" " -f4)
-sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir
-sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${GATKHCjob} $scriptDir/GATK4/GATK.gatherVCFs_Universal_phoenix.sh -c $Config -S $Sample -o $workDir
+metricsJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+metricsJob=$(echo $GATKHCjob | cut -d" " -f4)
+gatherJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${GATKHCjob} $scriptDir/GATK4/GATK.gatherVCFs_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+gatherJob=$(echo $GATKHCjob | cut -d" " -f4)
+sbatch --dependency=afterok:${metricsJob}:${gatherJob} $scriptDir/utilities/bam2cram.samtools.sh -b $workDir/$Sample.recal.sorted.bwa.$BUILD.bam --delete

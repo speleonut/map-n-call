@@ -20,6 +20,7 @@ echo "
 # -i /path/to/sample-name-map   RECOMMENDED. Location of a list of sample names and gVCF locations in a tab delimited format.  If not supplied the script will scrape the gVcfFolder as specified in the Config file.
 # -o /path/to/output            OPTIONAL. Where you want to find your VCF and other files if not set then current directory will be used
 # -c /path/to/Config.cfg        OPTIONAL. A default Config will be used if this is not specified.  The Config contains all of the stuff that used to be set in the top part of our scripts
+# --gpfs                        OPTIONAL. Use /gpfs/users/$USER/tmp as your tmp directory for better read/write performance.
 # -h | --help                   OPTIONAL. Displays this message
 #
 # Example:
@@ -48,6 +49,9 @@ while [ "$1" != "" ]; do
                 -o )            shift
                                 workDir=$1
                                 ;;
+                --gpfs )        shift
+                                tmpDir="/gpfs/users/${USER}/tmp"
+                                ;;
                 -h | --help )   usage
                                 exit 0
                                 ;;
@@ -69,6 +73,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
 fi
 
 tmpDir=$tmpDir/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
+echo "## INFO: Using ${tmpDir} as the tmp directory location."
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
