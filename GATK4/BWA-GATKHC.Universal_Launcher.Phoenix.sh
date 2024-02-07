@@ -31,6 +31,18 @@ case "${BUILD}" in
 esac
 }
 
+catFastq() {
+    read -n1 -s -r -p $'Is this what you want to do (Y/n)?\n' key
+    case "$key" in
+        "y" | "Y" )    echo "OK"
+                       ;;
+        "n" | "N" )    echo "If this combination of fastq files shouldn't be concatenated please move incorrect files to another directory or create a directory that contains links only to the correct files."
+	                   exit 0
+                       ;;
+        * )            catFastq
+                       ;;
+fi
+}
 usage()
 {
 echo "# This is the master script that coordinates job submission for primarily Illumina genome sequencing alignments but will work for exomes too.
@@ -114,24 +126,32 @@ fi
 
 seqFile1=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_*.gz
 if [ -f "$seqFile1" ]; then
+    seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
 	fileCount=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
-		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
-		exit 1
-	fi
-	seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
+        echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
+        echo "## INFO: The following R1 files will be concatenated:" 
+        echo "$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1)"
+        echo "## INFO: The following R2 files will be concatenated:"
+        echo "$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2)"
+		catFastq
+	fi	
 else
+	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1)
+    if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
+        echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
+        exit 1
+    fi
+	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
 	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
-		echo "Sorry I've found the wrong number of sequence files (${fileCount}) and there's a risk I will map the wrong ones!"
-		exit 1
+        echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
+        echo "## INFO: The following R1 files will be concatenated:" 
+        echo "$(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R1)"
+        echo "## INFO: The following R2 files will be concatenated:"
+        echo "$(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2)"
+		catFastq
 	fi
-	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1) 
-	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
-fi
-if [ ! -f "${seqFile1}" ]; then # Proceed to epic failure if can't locate unique seq file names
-	echo "Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
-	exit 1
 fi
 
 if [ -z "$LB" ]; then # If library not specified then use "IlluminaGenome"

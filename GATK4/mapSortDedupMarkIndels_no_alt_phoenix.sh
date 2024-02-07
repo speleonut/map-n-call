@@ -170,6 +170,10 @@ if [ -f "$seqFile1" ]; then
 	fi	
 else
 	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1)
+    if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
+        echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
+        exit 1
+    fi
 	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
 	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
@@ -186,10 +190,6 @@ else
 	fi
 fi
 
-if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
-	echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
-	exit 1
-fi
 if [ -z "$ID" ]; then
 	ID=$(zcat $seqFile1 | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${outPrefix} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
 fi

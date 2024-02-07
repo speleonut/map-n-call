@@ -153,6 +153,10 @@ if [ -f "$seqFile1" ]; then
 	fi	
 else
 	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1)
+    if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
+        echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
+        exit 1
+    fi
 	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
 	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
@@ -167,10 +171,6 @@ else
         $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2)"
 		seqPath=$tmpDir
 	fi
-fi
-if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
-	echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
-	exit 1
 fi
 
 if [ -z $ID ]; then
