@@ -32,16 +32,18 @@ esac
 }
 
 catFastq() {
-    read -n1 -s -r -p $'Is this what you want to do (Y/n)?\n' key
-    case "$key" in
-        "y" | "Y" )    echo "OK"
-                       ;;
-        "n" | "N" )    echo "If this combination of fastq files shouldn't be concatenated please move incorrect files to another directory or create a directory that contains links only to the correct files."
-	                   exit 0
-                       ;;
-        * )            catFastq
-                       ;;
-    esac
+    while true; do
+        read -n1 -t 5 -r -p "Is this what you want to do (Y/n)?" key
+        case $key in
+            [yY] )    echo "OK"
+                      break;;
+            [nN] )    echo "If this combination of fastq files shouldn't be concatenated please move incorrect files to another directory or create a directory that contains links only to the correct files."
+	                  exit 0
+                      ;;
+            * )       "Please answer (Y/n)?"
+                      ;;
+        esac
+    done
 }
 usage()
 {
