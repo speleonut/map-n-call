@@ -41,7 +41,7 @@ catFastq() {
                        ;;
         * )            catFastq
                        ;;
-fi
+    esac
 }
 usage()
 {
