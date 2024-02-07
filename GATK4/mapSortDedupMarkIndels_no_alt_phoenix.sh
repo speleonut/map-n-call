@@ -159,11 +159,11 @@ if [ -f "$seqFile1" ]; then
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
         cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
-        seqFile1=${outPrefix}.cat_R1.fastq.gz
+        seqFile1=$tmpDir/${outPrefix}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
         $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1)"
         cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
-        seqFile2=${outPrefix}.cat_R2.fastq.gz
+        seqFile2=$tmpDir/${outPrefix}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
         $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2)"
 		seqPath=$tmpDir
