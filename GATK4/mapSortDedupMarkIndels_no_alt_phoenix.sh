@@ -152,46 +152,46 @@ fi
 # Locate sequence file names.
 # This is a bit awkward and prone to errors since relies on only a few file naming conventions and assumes how they will line up after ls of files
 # ...and assumes only your seq files are in the folder matching the file prefix
-cd $seqPath
-seqFile1=$(ls *.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of $outPrefix_fastq.gz
+seqFile1=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_*.gz
 if [ -f "$seqFile1" ]; then
-    seqFile2=$(ls *.gz | grep ${outPrefix}\_ | tail -n 1)
-	fileCount=$(ls *.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
+    seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
+	fileCount=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.gz | grep ${outPrefix}\_ | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
-        seqPath=$tmpDir
-		seqFile1=${outPrefix}.cat_R1.fastq.gz
+        cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
+        seqFile1=${outPrefix}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.gz | grep ${outPrefix}\_ | grep _R1)"
-        cat $(ls *.gz | grep ${outPrefix}\_ | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
+        $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1)"
+        cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
         seqFile2=${outPrefix}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.gz | grep ${outPrefix}\_ | grep _R2)"
+        $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2)"
+		seqPath=$tmpDir
 	fi	
 else
-	seqFile1=$(ls *.gz | grep -w ${outPrefix} | head -n 1)
-	seqFile2=$(ls *.gz | grep -w ${outPrefix} | tail -n 1)
-	fileCount=$(ls *.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
+	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1)
+	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
+	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.gz | grep  -w ${outPrefix} | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
-        seqPath=$tmpDir
-		seqFile1=${outPrefix}.cat_R1.fastq.gz
+        cat $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
+        seqFile1=$tmpDir/${outPrefix}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.gz | grep  -w ${outPrefix} | grep _R1)"
-        cat $(ls *.gz | grep  -w ${outPrefix} | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
-        seqFile2=${outPrefix}.cat_R2.fastq.gz
+        $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R1)"
+        cat $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
+        seqFile2=$tmpDir/${outPrefix}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.gz | grep  -w ${outPrefix} | grep _R2)"
+        $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2)"
+		seqPath=$tmpDir
 	fi
 fi
-if [ ! -f "$seqPath/$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
+
+if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
 	echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
 	exit 1
 fi
 if [ -z "$ID" ]; then
-	ID=$(zcat $seqPath/$seqFile1 | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${outPrefix} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
+	ID=$(zcat $seqFile1 | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${outPrefix} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
 fi
 
 ## Load modules ##
@@ -203,7 +203,7 @@ done
 # Map reads to genome using BWA-MEM
  
 cd $tmpDir
-bwa mem  -K 100000000 -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample}" $BWAINDEXPATH/$BWAINDEX $seqPath/$seqFile1 $seqPath/$seqFile2 |\
+bwa mem  -K 100000000 -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample}" $BWAINDEXPATH/$BWAINDEX $seqFile1 $seqFile2 |\
 samtools view -bT $GATKREFPATH/$BUILD/$GATKINDEX - |\
 samtools sort -l 5 -m 4G -@24 -T${Sample} -o ${Sample}.samsort.bwa.$BUILD.bam -
 
@@ -218,3 +218,7 @@ fi
 
 echo "# Flagstats" > $workDir/${Sample}.Stat_Summary.txt
 samtools flagstat $workDir/${Sample}.marked.sort.bwa.$BUILD.bam >> $workDir/${Sample}.Stat_Summary.txt
+
+if [ -f "$tmpDir/${outPrefix}.cat_R2.fastq.gz" ]; then
+    rm $tmpDir/${outPrefix}.cat_R1.fastq.gz $tmpDir/${outPrefix}.cat_R2.fastq.gz
+fi
