@@ -80,7 +80,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
     echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
 fi
 
-if [ -z "${scriptDir}" ]; then # Test if the script was executed independently of the Universal Launcher script
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
     configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
     source ${configDir}/BWA-GATKHC.environment.cfg

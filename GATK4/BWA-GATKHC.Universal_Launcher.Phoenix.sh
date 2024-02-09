@@ -67,8 +67,7 @@ echo "# This is the master script that coordinates job submission for primarily 
 # 
 # Original: Mark Corbett, 16/11/2017 
 # Modified: (Date; Name; Description)
-# 20/4/2020; Ali Gardner; for hg38 Phoenix
-# 
+# See https://github.com/speleonut/map-n-call/activity for script edit history
 # 
 "
 }
