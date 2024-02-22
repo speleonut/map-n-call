@@ -102,6 +102,17 @@ if [ -z "$workDir" ]; then # If no output directory then use current directory
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
+## Check for the BAM or CRAM file ##
+bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam
+if [ ! -f "$bamFile" ]; then
+    bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.cram
+    if [ ! -f "$bamFile" ]; then
+        echo "## ERROR: I could not find your BAM or CRAM file, please check previous stages of the pipeline for errors."
+        echo "This script requires the BAM or CRAM file to have a specific naming convention e.g. $(basename $bamFile)."
+        exit 1
+    fi
+fi
+
 ## Define the array for the batch job ##
 bedFile=($arrIndexBedFiles)
 if [ ! -d "$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" ]; then
@@ -117,7 +128,7 @@ done
  
 cd $tmpDir
 $GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" HaplotypeCaller \
--I $workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
+-I $bamFile \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
 --dbsnp $GATKREFPATH/$BUILD/$DBSNP \

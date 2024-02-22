@@ -101,6 +101,17 @@ if [ -z "$workDir" ]; then # If no output directory then use current directory
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
+## Check for the BAM or CRAM file ##
+bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam
+if [ ! -f "$bamFile" ]; then
+    bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.cram
+    if [ ! -f "$bamFile" ]; then
+        echo "## ERROR: I could not find your BAM or CRAM file, please check previous stages of the pipeline for errors."
+        echo "This script requires the BAM or CRAM file to have a specific naming convention e.g. $(basename $bamFile)."
+        exit 1
+    fi
+fi
+
 ## Load modules ##
 for mod in "${modList[@]}"; do
     module load $mod
@@ -109,7 +120,7 @@ done
 ## Start of the script ##
 cd $workDir
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" CollectWgsMetrics \
-INPUT=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
+INPUT=$bamFile \
 OUTPUT=$workDir/$Sample.$BUILD.WGS.Metrics \
 REFERENCE_SEQUENCE=$GATKREFPATH/$BUILD/$GATKINDEX \
 COVERAGE_CAP=100 \

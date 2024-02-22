@@ -97,7 +97,7 @@ if [ -z "$Config" ]; then # If no Config file specified use the default
 fi
 source $Config
 
-if [ -z "$workDir" ]; then # If no output directory then use current directory
+if [ -z "$workDir" ]; then # If no output directory then use default directory
 	workDir=${userDir}/alignments/${Sample}
 	echo "## INFO: Using $workDir as the output directory"
 fi
