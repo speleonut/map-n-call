@@ -1,13 +1,11 @@
 #!/bin/bash
 #SBATCH -J BAM2CRAM
 #SBATCH -o /hpcfs/users/%u/log/bam2cram.samtools.slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch                        # partition (this is the queue your job will be added to)
-#SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
-#SBATCH -n 8                            # number of cores (here uses 8)
+#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -N 1                            # number of nodes
+#SBATCH -n 8                            # number of cores
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=36G                       # memory pool for all cores (here set to 32 GB)
+#SBATCH --mem=36G                       # memory pool for all cores
 
 # Notification configuration
 #SBATCH --mail-type=END                 # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
@@ -18,7 +16,9 @@
 userDir="/hpcfs/users/${USER}"
 refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 delBamFile=false
-modList=("arch/haswell" "SAMtools/1.10-foss-2016b")
+module purge
+module use /apps/skl/modules/all
+modList=("SAMtools/1.17-GCC-11.2.0")
 
 # Script functions
 usage()

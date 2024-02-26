@@ -1,11 +1,18 @@
 #!/bin/bash
-# This is a coordinator script for genotypeing of gVGFs with GATK4 and subsequent merging of the produced VCFs
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-tmpDir="/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}" # Use a tmp directory for all of the GATK and samtools temp files
+# This is a coordinator script for genotyping of gVGFs with GATK4 and subsequent merging of the produced VCFs
+whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
+source ${enviroCfg}
+
+if [ ! -d "${logDir}" ]; then
+    mkdir -p ${logDir}
+    echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+fi
 
 usage()
 {
-echo"
+echo "
 # Coordinator script for genotype recalibration and subsequent VCF merging
 #
 # Options:
@@ -13,6 +20,7 @@ echo"
 # -i /path/to/sample-name-map   RECOMMENDED. Location of a list of sample names and gVCF locations in a tab delimited format.  If not supplied the script will scrape the gVcfFolder as specified in the Config file.
 # -o /path/to/output            OPTIONAL. Where you want to find your VCF and other files if not set then current directory will be used
 # -c /path/to/Config.cfg        OPTIONAL. A default Config will be used if this is not specified.  The Config contains all of the stuff that used to be set in the top part of our scripts
+# --gpfs                        OPTIONAL. Use /gpfs/users/$USER/tmp as your tmp directory for better read/write performance.
 # -h | --help                   OPTIONAL. Displays this message
 #
 # Example:
@@ -41,6 +49,9 @@ while [ "$1" != "" ]; do
                 -o )            shift
                                 workDir=$1
                                 ;;
+                --gpfs )        shift
+                                tmpDir="/gpfs/users/${USER}/tmp"
+                                ;;
                 -h | --help )   usage
                                 exit 0
                                 ;;
@@ -62,6 +73,7 @@ if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
 fi
 
 tmpDir=$tmpDir/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
+echo "## INFO: Using ${tmpDir} as the tmp directory location."
 if [ ! -d "$tmpDir" ]; then
 	mkdir -p $tmpDir
 fi
@@ -81,6 +93,6 @@ if [ -z "$sampleNameMap" ]; then #If sampleNameMap is not supplied try to find s
 fi
 
 ## Submit Jobs ##
-genotypeJob=`sbatch --array=0-23 --export=ALL $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
+genotypeJob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/GATK.GenoRecal.GenDBGeno_Universal_phoenix.sh -c ${Config} -i ${sampleNameMap} -o ${workDir} -p ${outPrefix}`
 genotypeJob=$(echo $genotypeJob | cut -d" " -f4)
-sbatch --export=ALL --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}
+sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${genotypeJob} $scriptDir/GATK4/GATK.GenoRecal.recalMerge_Universal_phoenix.sh -c ${Config} -p ${outPrefix} -o ${workDir}

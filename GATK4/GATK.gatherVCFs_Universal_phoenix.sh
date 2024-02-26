@@ -2,9 +2,7 @@
 
 #SBATCH -J gatherVCFs
 #SBATCH -o /hpcfs/users/%u/log/gatherGVCFs-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=01:30:00
@@ -17,8 +15,10 @@
 
 # A script to merge gVCF files together for later genotyping
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "Java/1.8.0_121" "HTSlib/1.10.2-foss-2016b" "SAMtools/1.10-foss-2016b")
+source ${enviroCfg}
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
 
 usage()
 {
@@ -70,24 +70,36 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-if [ -z "$Config" ]; then # If no Config file specified use the default
-    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
-    echo "## INFO: Using the default config ${Config}"
-fi
-source $Config
+
 if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	usage
 	echo "## ERROR: You need to specify a Sample name that refers to your .bam file \$Sample.marked.sort.bwa.$BUILD.bam."
 	exit 1
 fi
-if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
-	echo "## INFO: Using $workDir as the output directory"
+
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
+if [ -z "$Config" ]; then # If no Config file specified use the default
+    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
+    echo "## INFO: Using the default config ${Config}"
+fi
+source $Config
+
+if [ -z "$workDir" ]; then # If no output directory then use default directory
+	workDir=${userDir}/alignments/${Sample}
+	echo "## INFO: Using $workDir as the output directory"
 fi
 
 if [ ! -d "$gVcfFolder" ]; then
@@ -101,24 +113,29 @@ for mod in "${modList[@]}"; do
 done
 
 cd $tmpDir
-cat $tmpDir/*.$Sample.pipeline.log >> $workDir/$Sample.pipeline.log
+cat $tmpDir/*.${Sample}.${BUILD}.pipeline.log >> $workDir/${Sample}.${BUILD}.pipeline.log
 find *.$Sample.snps.g.vcf > $tmpDir/$Sample.gvcf.list.txt
 sed 's,^,-I '"$tmpDir"'\/,g' $tmpDir/$Sample.gvcf.list.txt > $tmpDir/$Sample.inputGVCF.txt
 
-java -Xmx8g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GatherVcfs  \
+$GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" GatherVcfs  \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 $(cat $tmpDir/$Sample.inputGVCF.txt) \
--O $gVcfFolder/$Sample.$BUILD.snps.g.vcf >> $workDir/$Sample.pipeline.log  2>&1
+-O $gVcfFolder/$Sample.$BUILD.snps.g.vcf >> $workDir/${Sample}.${BUILD}.pipeline.log  2>&1
 
 bgzip $gVcfFolder/$Sample.$BUILD.snps.g.vcf
 tabix $gVcfFolder/$Sample.$BUILD.snps.g.vcf.gz
 
 ## Check for bad things and clean up
-grep ERROR $workDir/$Sample.pipeline.log > $workDir/$Sample.pipeline.ERROR.log
-if [ -z $(cat $workDir/$Sample.pipeline.ERROR.log) ]; then
-	rm $workDir/$Sample.pipeline.ERROR.log
+if [ ! -f "$gVcfFolder/$Sample.$BUILD.snps.g.vcf.gz.tbi" ]; then
+    echo "##ERROR: Some bad things went down while this script was running please see $workDir/${Sample}.${BUILD}.pipeline.ERROR.log and prepare for disappointment."
+    exit 1
+fi
+
+grep -i ERROR $workDir/${Sample}.${BUILD}.pipeline.log > $workDir/${Sample}.${BUILD}.pipeline.ERROR.log
+if [ -z $(cat $workDir/${Sample}.${BUILD}.pipeline.ERROR.log) ]; then
+	rm $workDir/${Sample}.${BUILD}.pipeline.ERROR.log
 	rm -r $tmpDir
 else 
-	echo "##ERROR: Some bad things went down while this script was running please see $workDir/$Sample.pipeline.ERROR.log and prepare for disappointment."
+	echo "##ERROR: Some bad things went down while this script was running please see $workDir/${Sample}.${BUILD}.pipeline.ERROR.log and prepare for disappointment."
     exit 1
 fi

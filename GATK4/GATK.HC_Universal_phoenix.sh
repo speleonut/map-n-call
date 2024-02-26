@@ -2,9 +2,7 @@
 
 #SBATCH -J GATKHC
 #SBATCH -o /hpcfs/users/%u/log/GATK4HC-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=07:00:00
@@ -18,8 +16,10 @@
 # A script to call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "Java/1.8.0_121")
+source ${enviroCfg}
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 
 usage()
 {
@@ -70,24 +70,47 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-if [ -z "$Config" ]; then # If no Config file specified use the default
-    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
-    echo "## INFO: Using the default config ${Config}"
-fi
-source $Config
+
 if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	usage
 	echo "## ERROR: You need to specify a Sample name that refers to your .bam file \$Sample.marked.sort.bwa.$BUILD.bam."
 	exit 1
 fi
+
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
+fi
+
+if [ -z "$Config" ]; then # If no Config file specified use the default
+    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
+    echo "## INFO: Using the default config ${Config}"
+fi
+source $Config
+
 if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
+	workDir=${userDir}/alignments/${Sample}
 	echo "## INFO: Using $workDir as the output directory"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
+## Check for the BAM or CRAM file ##
+bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.bam
+if [ ! -f "$bamFile" ]; then
+    bamFile=$workDir/$Sample.recal.sorted.bwa.$BUILD.cram
+    if [ ! -f "$bamFile" ]; then
+        echo "## ERROR: I could not find your BAM or CRAM file, please check previous stages of the pipeline for errors."
+        echo "This script requires the BAM or CRAM file to have a specific naming convention e.g. $(basename $bamFile)."
+        exit 1
+    fi
 fi
 
 ## Define the array for the batch job ##
@@ -104,12 +127,12 @@ done
 ## Start of the script ##
  
 cd $tmpDir
-java -Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]} -jar $GATKPATH/GenomeAnalysisTK.jar HaplotypeCaller \
--I $workDir/$Sample.recal.sorted.bwa.$BUILD.bam \
+$GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" HaplotypeCaller \
+-I $bamFile \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
 --dbsnp $GATKREFPATH/$BUILD/$DBSNP \
 --min-base-quality-score 20 \
 --native-pair-hmm-threads 10 \
 -ERC GVCF \
--O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.snps.g.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.pipeline.log 2>&1
+-O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.snps.g.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log 2>&1

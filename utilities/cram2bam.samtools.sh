@@ -1,9 +1,7 @@
 #!/bin/bash
 #SBATCH -J CRAM2BAM
 #SBATCH -o /hpcfs/users/%u/log/cram2bam.samtools.slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch                        # partition (this is the queue your job will be added to)
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 8                            # number of cores (here uses 8)
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
@@ -18,7 +16,9 @@
 userDir="/hpcfs/users/${USER}"
 refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 delBamFile=false
-modList=("arch/haswell" "SAMtools/1.10-foss-2016b")
+module purge
+module use /apps/skl/modules/all
+modList=("SAMtools/1.17-GCC-11.2.0")
 
 # Script functions
 usage()
@@ -174,9 +174,9 @@ samtools index ${outDir}/${baseBamFile}.bam
 
 # Check everything went OK and clean up the old CRAM file or suggest deletion
 if "$delBamFile"; then
-    if [ -f "${outDir}/${baseBamFile}.cram.bai" ]; then
+    if [ -f "${outDir}/${baseBamFile}.bam.bai" ]; then
         rm ${bamFile[SLURM_ARRAY_TASK_ID]} ${baiFile}
-        echo "## INFO: Original BAM and BAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
+        echo "## INFO: Original CRAM and CRAI file ${bamFile[SLURM_ARRAY_TASK_ID]} have been removed as per your request."
     else
         echo "## ERROR: Something may have gone wrong during the conversion, the .bai file was not created.  Your original CRAM file has not been deleted"
         exit 1

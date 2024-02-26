@@ -2,9 +2,7 @@
 
 #SBATCH -J BQSR
 #SBATCH -o /hpcfs/users/%u/log/bqsr-slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 4
 #SBATCH --time=12:00:00
@@ -18,8 +16,10 @@
 # A script to calculate base quality score recalibrations using the GATK v4.x best practices
 
 ## List modules and file paths ##
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
-modList=("arch/haswell" "Java/1.8.0_121")
+source ${enviroCfg}
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 
 usage()
 {
@@ -70,24 +70,36 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-if [ -z "$Config" ]; then # If no Config file specified use the default
-    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
-    echo "## INFO: Using the default config ${Config}"
-fi
-source $Config
+
 if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
 	usage
 	echo "## ERROR: You need to specify a Sample name that refers to your .bam file \$Sample.marked.sort.bwa.$BUILD.bam."
 	exit 1
 fi
-if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=/hpcfs/users/${USER}/BWA-GATK/$Sample
-	echo "## INFO: Using $workDir as the output directory"
+
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample} # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
+if [ -z "$Config" ]; then # If no Config file specified use the default
+    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
+    echo "## INFO: Using the default config ${Config}"
+fi
+source $Config
+
+if [ -z "$workDir" ]; then # If no output directory then use current directory
+	workDir=${userDir}/alignments/${Sample}
+	echo "## INFO: Using $workDir as the output directory"
 fi
 
 ## Load modules ##
@@ -97,15 +109,16 @@ done
 
 ## Start data processing ##
 cd $tmpDir
+
 # Base quality score recalibration
-java -Xmx96g -Djava.io.tmpdir=$tmpDir/ -jar $GATKPATH/GenomeAnalysisTK.jar BaseRecalibrator \
+$GATKPATH/gatk --java-options "-Xmx96g -Djava.io.tmpdir=$tmpDir" BaseRecalibrator \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
 --known-sites $GATKREFPATH/$BUILD/$DBSNP \
 --known-sites $GATKREFPATH/$BUILD/${OneKg_INDELS} \
 --known-sites $GATKREFPATH/$BUILD/${Mills_INDELS} \
 --output $tmpDir/$Sample.recal.grp \
- >> $workDir/$Sample.pipeline.log 2>&1
+ >> $workDir/${Sample}.${BUILD}.pipeline.log 2>&1
 
 echo "
 # BQSR metrics" >> $workDir/$Sample.Stat_Summary.txt

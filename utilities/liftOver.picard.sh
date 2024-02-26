@@ -1,9 +1,7 @@
 #!/bin/bash
 #SBATCH -J liftOver
 #SBATCH -o /hpcfs/users/%u/log/liftOver.slurm-%j.out
-
-#SBATCH -A robinson
-#SBATCH -p batch            	                            # partition (this is the queue your job will be added to)
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1                                                # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 4                                                # number of cores (here uses 4)
 #SBATCH --time=08:00:00                                     # time allocation, which has the format (D-HH:MM)
@@ -17,7 +15,9 @@
 # liftOver.picard.sh
 # Set location of picard.jar
 PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
-modList=("arch/haswell" "Java/10.0.1" "BCFtools/1.9-foss-2016b")
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6" "BCFtools/1.17-GCC-11.2.0")
 usage()
 {
 echo "# liftOver.picard.sh Lift a vcf over from one genome build to another.

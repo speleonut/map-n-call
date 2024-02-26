@@ -2,8 +2,7 @@
 
 #SBATCH -J MapSortDup
 #SBATCH -o /hpcfs/users/%u/log/mapSortDedup-%j.out
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 25
 #SBATCH --time=24:00:00
@@ -16,15 +15,10 @@
 
 # run the executable
 # A script to map reads and then call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
-scriptDir=/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call
-logDir="/hpcfs/users/${USER}/log"
-
-if [ ! -d "${logDir}" ]; then
-    mkdir -p ${logDir}
-    echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
-fi
-
-modList=("arch/haswell" "BWA/0.7.17-foss-2016b" "HTSlib/1.10.2-foss-2016b" "SAMtools/1.10-foss-2016b" "sambamba/0.6.6-foss-2016b")
+source ${enviroCfg}
+module purge
+module use /apps/skl/modules/all
+modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
 
 usage()
 {
@@ -34,7 +28,6 @@ echo "# Script for processing and mapping Illumina 100bp pair-end sequence data 
 #
 # Usage: 
 # sbatch $0 -p file_prefix -s /path/to/sequences -o /path/to/output -c /path/to/Config.cfg -S Sample -L LIBRARY -I ID] | [ - h | --help ]
-# sbatch --array 0-(n-1Samples) $0 -i /path/to/multiSampleInputFile.txt -s /path/to/sequences -o /path/to/output -c /path/to/Config.cfg -L LIBRARY | [ - h | --help ]
 #
 # Options
 # -p	REQUIRED. A prefix to your sequence files of the form PREFIX_R1.fastq.gz 
@@ -101,30 +94,51 @@ while [ "$1" != "" ]; do
 done
 
 # Check script requirements
-if [ -z "$Config" ]; then # If no Config file specified use the default
-   Config=$scriptDir/configs/BWA-GATKHC.GRCh37_full_analysis_set_phoenix.cfg
-fi
-source $Config
-if [ ! -z "$inputFile" ]; then
-    outPrefix=($(awk '{print $1}' $inputFile))
-    Sample=($(awk '{print $2}' $inputFile))
-fi
 if [ -z "$outPrefix" ]; then # If no file prefix specified then do not proceed
 	usage
 	echo "## ERROR: You need to specify a file prefix referring to your sequence files eg. PREFIX_R1.fastq.gz."
 	exit 1
 fi
+if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
+	Sample=${outPrefix}
+	echo "## INFO: Using ${Sample} for Sample name"
+fi
+
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
+        Sample=$outPrefix
+    fi
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${Sample}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
+fi
+
+if [ -z "$Config" ]; then # If no Config file specified use the default
+   Config=$scriptDir/configs/BWA-GATKHC.hs37d5_phoenix.cfg
+fi
+source $Config
+
+if [ ! -z "$inputFile" ]; then
+    outPrefix=($(awk '{print $1}' $inputFile))
+    Sample=($(awk '{print $2}' $inputFile))
+fi
+
 if [ -z "$seqPath" ]; then # If path to sequences is not specified then do not proceed
 	usage
 	echo "## ERROR: You need to specify the path to your sequence files"
 	exit 1
 fi
-if [ -z "$Sample" ]; then # If Sample name not specified then use "outPrefix"
-	Sample=${outPrefix[$SLURM_ARRAY_TASK_ID]}
-	echo "## INFO: Using ${Sample} for Sample name"
-fi
+
 if [ -z "$workDir" ]; then # If no output directory then use default directory
-	workDir=/hpcfs/users/${USER}/alignments/${Sample[$SLURM_ARRAY_TASK_ID]}
+	workDir=$userDir/alignments/${Sample}
 	echo "#INFO: Using $workDir as the output directory"
 fi
 if [ -z "$LB" ]; then # If library not specified then use "IlluminaLibrary"
@@ -132,56 +146,52 @@ if [ -z "$LB" ]; then # If library not specified then use "IlluminaLibrary"
 	echo "#INFO: Using $LB for library name"
 fi
 
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/${Sample[$SLURM_ARRAY_TASK_ID]} # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
-fi
 if [ ! -d "$workDir" ]; then
 	mkdir -p $workDir
 fi	
 # Locate sequence file names.
 # This is a bit awkward and prone to errors since relies on only a few file naming conventions and assumes how they will line up after ls of files
 # ...and assumes only your seq files are in the folder matching the file prefix
-cd $seqPath
-seqFile1=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | head -n 1) # Assume sequence files are some form of $outPrefix_fastq.gz
+seqFile1=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | head -n 1) # Assume sequence files are some form of ${outPrefix}_*.gz
 if [ -f "$seqFile1" ]; then
-    seqFile2=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | tail -n 1)
-	fileCount=$(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | wc -l | sed 's/[^0-9]*//g')
+    seqFile2=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | tail -n 1)
+	fileCount=$(find ${seqPath}/*.gz | grep ${outPrefix}\_ | wc -l | sed 's/[^0-9]*//g')
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
-        seqPath=$tmpDir
-		seqFile1=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
+        cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
+        seqFile1=$tmpDir/${outPrefix}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R1)"
-        cat $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
-        seqFile2=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
+        $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R1)"
+        cat $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
+        seqFile2=$tmpDir/${outPrefix}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.gz | grep ${outPrefix[$SLURM_ARRAY_TASK_ID]}\_ | grep _R2)"
+        $(find ${seqPath}/*.gz | grep ${outPrefix}\_ | grep _R2)"
+		seqPath=$tmpDir
 	fi	
 else
-	seqFile1=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | head -n 1)
-	seqFile2=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | tail -n 1)
-	fileCount=$(ls *.gz | grep -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
+	seqFile1=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | head -n 1)
+    if [ ! -f "$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
+        echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix} as part of the filename to locate them"
+        exit 1
+    fi
+	seqFile2=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | tail -n 1)
+	fileCount=$(find ${seqPath}/*.gz | grep -w ${outPrefix} | wc -l | sed 's/[^0-9]*//g') # Otherwise try other seq file name options
 	if [ $fileCount -ne "2" ]; then
         echo "## WARN: I've found $fileCount sequence files but I was hoping for only 2. The R1 and R2 files will be concatenated before mapping, see below for details."
-        cat $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
-        seqPath=$tmpDir
-		seqFile1=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R1.fastq.gz
+        cat $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R1) > $tmpDir/${outPrefix}.cat_R1.fastq.gz
+        seqFile1=$tmpDir/${outPrefix}.cat_R1.fastq.gz
         echo "## INFO: The following R1 files were concatenated 
-        $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R1)"
-        cat $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2) > $tmpDir/${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
-        seqFile2=${outPrefix[$SLURM_ARRAY_TASK_ID]}.cat_R2.fastq.gz
+        $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R1)"
+        cat $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2) > $tmpDir/${outPrefix}.cat_R2.fastq.gz
+        seqFile2=$tmpDir/${outPrefix}.cat_R2.fastq.gz
         echo "## INFO: The following R2 files were concatenated 
-        $(ls *.gz | grep  -w ${outPrefix[$SLURM_ARRAY_TASK_ID]} | grep _R2)"
+        $(find ${seqPath}/*.gz | grep  -w ${outPrefix} | grep _R2)"
+		seqPath=$tmpDir
 	fi
 fi
-if [ ! -f "$seqPath/$seqFile1" ]; then # Proceed to epic failure if can't locate unique seq file names
-	echo "## ERROR: Sorry I can't find your sequence files! I'm using ${outPrefix[$SLURM_ARRAY_TASK_ID]} as part of the filename to locate them"
-	exit 1
-fi
+
 if [ -z "$ID" ]; then
-	ID=$(zcat $seqPath/$seqFile1 | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${outPrefix[$SLURM_ARRAY_TASK_ID]} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
+	ID=$(zcat $seqFile1 | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${outPrefix} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
 fi
 
 ## Load modules ##
@@ -193,18 +203,22 @@ done
 # Map reads to genome using BWA-MEM
  
 cd $tmpDir
-bwa mem  -K 100000000 -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample[$SLURM_ARRAY_TASK_ID]}" $BWAINDEXPATH/$BWAINDEX $seqPath/$seqFile1 $seqPath/$seqFile2 |\
+bwa mem  -K 100000000 -M -t 24 -R "@RG\tID:$ID\tLB:$LB\tPL:ILLUMINA\tSM:${Sample}" $BWAINDEXPATH/$BWAINDEX $seqFile1 $seqFile2 |\
 samtools view -bT $GATKREFPATH/$BUILD/$GATKINDEX - |\
-samtools sort -l 5 -m 4G -@24 -T${Sample[$SLURM_ARRAY_TASK_ID]} -o ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam -
+samtools sort -l 5 -m 4G -@24 -T${Sample} -o ${Sample}.samsort.bwa.$BUILD.bam -
 
 # Mark duplicates 
-sambamba markdup -t 24 -l 5 --tmpdir=$tmpDir --overflow-list-size 1000000 --hash-table-size 1000000 ${Sample[$SLURM_ARRAY_TASK_ID]}.samsort.bwa.$BUILD.bam $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam
-if [ -f "$workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam" ]; then
+$sambambaProg markdup -t 24 -l 5 --tmpdir=$tmpDir --overflow-list-size 1000000 --hash-table-size 1000000 ${Sample}.samsort.bwa.$BUILD.bam $workDir/${Sample}.marked.sort.bwa.$BUILD.bam
+if [ -f "$workDir/${Sample}.marked.sort.bwa.$BUILD.bam" ]; then
     rm -R $tmpDir
 else
 	echo "## ERROR: Duplicate marking or earlier stage failed!"
 	exit 1
 fi
 
-echo "# Flagstats" > $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.Stat_Summary.txt
-samtools flagstat $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.marked.sort.bwa.$BUILD.bam >> $workDir/${Sample[$SLURM_ARRAY_TASK_ID]}.Stat_Summary.txt
+echo "# Flagstats" > $workDir/${Sample}.Stat_Summary.txt
+samtools flagstat $workDir/${Sample}.marked.sort.bwa.$BUILD.bam >> $workDir/${Sample}.Stat_Summary.txt
+
+if [ -f "$tmpDir/${outPrefix}.cat_R2.fastq.gz" ]; then
+    rm $tmpDir/${outPrefix}.cat_R1.fastq.gz $tmpDir/${outPrefix}.cat_R2.fastq.gz
+fi

@@ -2,8 +2,7 @@
 
 #SBATCH -J GATKGeno
 #SBATCH -o /hpcfs/users/%u/log/genDBGeno-slurm-%j.out
-#SBATCH -A robinson
-#SBATCH -p batch
+#SBATCH -p skylake,icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 6
 #SBATCH --time=24:00:00
@@ -16,12 +15,14 @@
 
 # See usage for description and history
 # Script variables (set and forget)
-modList=("arch/haswell" "Java/1.8.0_121")
-scriptDir="/hpcfs/groups/phoenix-hpc-neurogenetics/scripts/git/neurocompnerds/map-n-call"
+source ${enviroCfg}
+module purge
+module use /apps/skl/modules/all
+modList=("Java/17.0.6")
 
 usage()
 {
-echo"
+echo "
 # Script that genotypes and refines variant calls on multiple samples then splits to individual VCF using GATK
 # Requires: GATKv4.x, Java, samtools
 #
@@ -74,21 +75,31 @@ while [ "$1" != "" ]; do
         shift
 done
 
+if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
+    outPrefix=$(date "+%Y%m%d_%s")
+    echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
+fi
+
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
+    source ${configDir}/BWA-GATKHC.environment.cfg
+    if [ ! -d "${logDir}" ]; then
+        mkdir -p ${logDir}
+        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
+    fi
+    tmpDir=${tmpDir}/${outPrefix}
+    if [ ! -d "$tmpDir" ]; then
+        mkdir -p $tmpDir
+    fi
+fi
+
 if [ -z "$Config" ]; then # If no Config file specified use the default
     Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
 fi
 source $Config
 
-if [ -z "$outPrefix" ]; then #If no outPrefix specified then make one up
-    outPrefix=$(date "+%Y%m%d_%s")
-    echo "## INFO: Your VCF files will be prefixed with the code: $outPrefix"
-fi
-
-tmpDir=/hpcfs/groups/phoenix-hpc-neurogenetics/tmp/${USER}/$outPrefix # Use a tmp directory for all of the GATK and samtools temp files
-if [ ! -d "$tmpDir" ]; then
-	mkdir -p $tmpDir
-fi
 if [ -z "$workDir" ]; then #If workDir not specified then output to the default directory
         workDir=/hpcfs/groups/phoenix-hpc-neurogenetics/variants/vcf/$BUILD
         echo "## INFO: Using $workDir as the output directory"
@@ -122,7 +133,7 @@ fi
 ## Start script ##
 cd ${tmpDir}
 
-java -Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenomicsDBImport \
+$GATKPATH/gatk --java-options "-Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir" GenomicsDBImport \
 --genomicsdb-workspace-path $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database \
 --genomicsdb-shared-posixfs-optimizations true \
 --batch-size 50 \
@@ -130,16 +141,16 @@ java -Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.ja
 --merge-input-intervals \
 --consolidate \
 --sample-name-map ${sampleNameMap} \
---intervals $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1
+--intervals $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar GenotypeGVCFs \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" GenotypeGVCFs \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -D $GATKREFPATH/$BUILD/$DBSNP \
 -G AS_StandardAnnotation \
 -V gendb://${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
---merge-input-intervals >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1
+--merge-input-intervals >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-java -Xmx32g -Djava.io.tmpdir=$tmpDir -jar $GATKPATH/GenomeAnalysisTK.jar MakeSitesOnlyVcf \
+$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" MakeSitesOnlyVcf \
 -I $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
--O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.sites.only.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.pipeline.log  2>&1
+-O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.sites.only.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
