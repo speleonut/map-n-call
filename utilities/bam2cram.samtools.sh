@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J BAM2CRAM
 #SBATCH -o /hpcfs/users/%u/log/bam2cram.samtools.slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1                            # number of nodes
 #SBATCH -n 8                            # number of cores
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
@@ -16,8 +16,8 @@
 userDir="/hpcfs/users/${USER}"
 refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 delBamFile=false
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("SAMtools/1.17-GCC-11.2.0")
 
 # Script functions

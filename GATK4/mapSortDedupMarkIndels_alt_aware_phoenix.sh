@@ -2,7 +2,7 @@
 
 #SBATCH -J MapSortDup
 #SBATCH -o /hpcfs/users/%u/log/mapSortDedup-slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 25
 #SBATCH --time=24:00:00
@@ -16,8 +16,8 @@
 # Script for mapping Illumina pair-end sequence data
 ## Set hard coded paths and variables ##
 source ${enviroCfg}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("BWA/0.7.17-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0" "SAMtools/1.17-GCC-11.2.0")
 usage()
 {

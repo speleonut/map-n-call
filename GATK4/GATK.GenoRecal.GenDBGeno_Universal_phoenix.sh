@@ -2,7 +2,7 @@
 
 #SBATCH -J GATKGeno
 #SBATCH -o /hpcfs/users/%u/log/genDBGeno-slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 6
 #SBATCH --time=24:00:00
@@ -16,8 +16,8 @@
 # See usage for description and history
 # Script variables (set and forget)
 source ${enviroCfg}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("Java/17.0.6")
 
 usage()

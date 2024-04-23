@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J liftOver
 #SBATCH -o /hpcfs/users/%u/log/liftOver.slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1                                                # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 4                                                # number of cores (here uses 4)
 #SBATCH --time=08:00:00                                     # time allocation, which has the format (D-HH:MM)
@@ -15,8 +15,8 @@
 # liftOver.picard.sh
 # Set location of picard.jar
 PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("Java/17.0.6" "BCFtools/1.17-GCC-11.2.0")
 usage()
 {

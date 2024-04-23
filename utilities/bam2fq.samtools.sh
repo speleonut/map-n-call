@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J BAM2fq
 #SBATCH -o /hpcfs/users/%u/log/bam2fq.samtools.slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1                            # number of nodes (due to the nature of sequential processing, here uses single node)
 #SBATCH -n 12                            # number of cores (here uses 12)
 #SBATCH --time=05:30:00                 # time allocation, which has the format (D-HH:MM)
@@ -14,8 +14,8 @@
 
 #Script Paths
 userDir=/hpcfs/users/${USER}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("SAMtools/1.17-GCC-11.2.0")
 nCores=10
 

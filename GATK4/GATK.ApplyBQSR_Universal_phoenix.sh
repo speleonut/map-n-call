@@ -2,7 +2,7 @@
 
 #SBATCH -J ApplyBQSR
 #SBATCH -o /hpcfs/users/%u/log/applyBQSR-slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=04:00:00
@@ -17,8 +17,8 @@
 
 ## List modules and file paths ##
 source ${enviroCfg}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("Java/17.0.6")
 
 usage()

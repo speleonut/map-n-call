@@ -2,7 +2,7 @@
 
 #SBATCH -J recal_merge
 #SBATCH -o /hpcfs/users/%u/log/recalMerge-slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=06:00:00
@@ -16,8 +16,8 @@
 # Script that genotypes and refines variant calls on multiple samples
 # Script variables (set and forget)
 source ${enviroCfg}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("R/4.3.1-foss-2021b" "Java/17.0.6" "HTSlib/1.17-GCC-11.2.0")
 
 usage()

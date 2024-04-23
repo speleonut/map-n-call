@@ -2,7 +2,7 @@
 
 #SBATCH -J WGSMetrics
 #SBATCH -o /hpcfs/users/%u/log/collectWGSmetrics-slurm-%j.out
-#SBATCH -p skylake,icelake,a100cpu
+#SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
 #SBATCH --time=08:00:00
@@ -16,8 +16,8 @@
 # A script to collect alignment metrics from WGS bam files using Picard
 ## List modules and file paths ##
 source ${enviroCfg}
-module purge
-module use /apps/skl/modules/all
+
+
 modList=("Java/17.0.6")
 
 usage()
