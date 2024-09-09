@@ -18,7 +18,7 @@
 source ${enviroCfg}
 
 
-modList=("Java/17.0.6")
+modList=("Java/17.0.6" "Python/3.9.6-GCCcore-11.2.0")
 
 usage()
 {

@@ -6,7 +6,7 @@
 #SBATCH -N 1
 #SBATCH -n 3
 #SBATCH --time=06:00:00
-#SBATCH --mem=48GB
+#SBATCH --mem=96GB
 
 # Notification configuration
 #SBATCH --mail-type=END
@@ -18,7 +18,7 @@
 source ${enviroCfg}
 
 
-modList=("R/4.3.1-foss-2021b" "Java/17.0.6" "HTSlib/1.17-GCC-11.2.0")
+modList=("R/4.3.1-foss-2021b" "Java/17.0.6" "Python/3.9.6-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0")
 
 usage()
 {

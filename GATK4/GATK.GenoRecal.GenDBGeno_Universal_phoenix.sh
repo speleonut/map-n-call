@@ -18,7 +18,7 @@
 source ${enviroCfg}
 
 
-modList=("Java/17.0.6")
+modList=("Java/17.0.6" "Python/3.11.3-GCCcore-12.3.0")
 
 usage()
 {
@@ -133,7 +133,7 @@ fi
 ## Start script ##
 cd ${tmpDir}
 
-$GATKPATH/gatk --java-options "-Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir" GenomicsDBImport \
+$GATKPATH/gatk --java-options "-Xmx96g -Xms96g -Djava.io.tmpdir=$tmpDir" GenomicsDBImport \
 --genomicsdb-workspace-path $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}\_database \
 --genomicsdb-shared-posixfs-optimizations true \
 --batch-size 50 \
@@ -143,7 +143,7 @@ $GATKPATH/gatk --java-options "-Xmx32g -Xms32g -Djava.io.tmpdir=$tmpDir" Genomic
 --sample-name-map ${sampleNameMap} \
 --intervals $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} > $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" GenotypeGVCFs \
+$GATKPATH/gatk --java-options "-Xmx96g -Djava.io.tmpdir=$tmpDir" GenotypeGVCFs \
 -R $GATKREFPATH/$BUILD/$GATKINDEX \
 -D $GATKREFPATH/$BUILD/$DBSNP \
 -G AS_StandardAnnotation \
@@ -151,6 +151,6 @@ $GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" GenotypeGVCFs \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 --merge-input-intervals >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
 
-$GATKPATH/gatk --java-options "-Xmx32g -Djava.io.tmpdir=$tmpDir" MakeSitesOnlyVcf \
+$GATKPATH/gatk --java-options "-Xmx96g -Djava.io.tmpdir=$tmpDir" MakeSitesOnlyVcf \
 -I $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.vcf \
 -O $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.$outPrefix.sites.only.vcf >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${outPrefix}.${BUILD}.pipeline.log  2>&1
