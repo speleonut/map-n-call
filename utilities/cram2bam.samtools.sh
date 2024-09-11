@@ -75,8 +75,11 @@ case "${genomeSize}" in
     3137161264 )    buildID="hg19"
                     genomeBuild="$refDir/ucsc.hg19.fasta"
                     ;;
-    3105715063 )    buildID="GRCh38.hs38d1"
+    3105715063 )    buildID="GRCh38.hs38d1.no_alt"
                     genomeBuild="$refDir/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.gz"
+                    ;;
+    3215250450 )    buildID="GRCh38.hs38d1.full"
+                    genomeBuild="$refDir/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz"
                     ;;
     3099750718 )    buildID="GRCh38"
                     genomeBuild="$refDir/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
