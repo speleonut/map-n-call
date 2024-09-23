@@ -188,16 +188,16 @@ test_genome_build
 #        exit 1
 #esac
 #BWAjob=$(echo $BWAjob | cut -d" " -f4)
-#BQSRjob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/GATK.BQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
-#BQSRjob=$(echo $BQSRjob | cut -d" " -f4) #--dependency=afterok:${BWAjob} 
-#ApplyBQSRJob=`sbatch --array=0-23%4 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
-#ApplyBQSRJob=$(echo $ApplyBQSRJob | cut -d" " -f4) # 
-#MergeJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${ApplyBQSRJob} $scriptDir/GATK4/sambamba.Merge_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
-#MergeJob=$(echo $MergeJob | cut -d" " -f4)
-GATKHCjob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/GATK.HC_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+BQSRjob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} $scriptDir/GATK4/GATK.BQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+BQSRjob=$(echo $BQSRjob | cut -d" " -f4) #--dependency=afterok:${BWAjob} 
+ApplyBQSRJob=`sbatch --array=0-23%4 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${BQSRjob} $scriptDir/GATK4/GATK.ApplyBQSR_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+ApplyBQSRJob=$(echo $ApplyBQSRJob | cut -d" " -f4) # 
+MergeJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${ApplyBQSRJob} $scriptDir/GATK4/sambamba.Merge_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+MergeJob=$(echo $MergeJob | cut -d" " -f4)
+GATKHCjob=`sbatch --array=0-23 --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/GATK.HC_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 GATKHCjob=$(echo $GATKHCjob | cut -d" " -f4) # --dependency=afterok:${MergeJob} 
-#metricsJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
-#metricsJob=$(echo $GATKHCjob | cut -d" " -f4)
+metricsJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${MergeJob} $scriptDir/GATK4/PicardCollectWGSMetrics_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
+metricsJob=$(echo $GATKHCjob | cut -d" " -f4)
 gatherJob=`sbatch --export=ALL,enviroCfg=${enviroCfg},tmpDir=${tmpDir} --dependency=afterok:${GATKHCjob} $scriptDir/GATK4/GATK.gatherVCFs_Universal_phoenix.sh -c $Config -S $Sample -o $workDir`
 gatherJob=$(echo $GATKHCjob | cut -d" " -f4)
-sbatch --dependency=afterok:${gatherJob} $scriptDir/utilities/bam2cram.samtools.sh -b $workDir/$Sample.recal.sorted.bwa.$BUILD.bam --delete #${metricsJob}:
+sbatch --dependency=afterok:${metricsJob}:${gatherJob} $scriptDir/utilities/bam2cram.samtools.sh -b $workDir/$Sample.recal.sorted.bwa.$BUILD.bam --delete #${metricsJob}:

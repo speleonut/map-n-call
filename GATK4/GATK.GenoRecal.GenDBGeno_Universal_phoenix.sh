@@ -6,7 +6,7 @@
 #SBATCH -N 1
 #SBATCH -n 6
 #SBATCH --time=24:00:00
-#SBATCH --mem=36GB
+#SBATCH --mem=100GB
 
 # Notification configuration 
 #SBATCH --mail-type=END                                         
