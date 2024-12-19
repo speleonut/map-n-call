@@ -1,6 +1,8 @@
 # Files matching these patterns will not be updated in git
 # Bad habit files like commented test scripts
-.hashed.sh
+*.hashed.sh
+*.ali.sh
+*.old
 
 # Bad things from Macs
 # General
