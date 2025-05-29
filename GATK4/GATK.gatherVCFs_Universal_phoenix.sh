@@ -132,7 +132,7 @@ if [ ! -f "$gVcfFolder/$Sample.$BUILD.snps.g.vcf.gz.tbi" ]; then
 fi
 
 grep -i ERROR $workDir/${Sample}.${BUILD}.pipeline.log > $workDir/${Sample}.${BUILD}.pipeline.ERROR.log
-if [ -z $(cat $workDir/${Sample}.${BUILD}.pipeline.ERROR.log) ]; then
+if [ -z "$(cat $workDir/${Sample}.${BUILD}.pipeline.ERROR.log)" ]; then
 	rm $workDir/${Sample}.${BUILD}.pipeline.ERROR.log
 	rm -r $tmpDir
 else 
