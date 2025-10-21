@@ -100,38 +100,40 @@ echo "## INFO: The CRAM file ${bamFile[SLURM_ARRAY_TASK_ID]} was likely mapped t
 # Parse script options
 while [ "$1" != "" ]; do
     case $1 in
-        -b )    shift
-                bamFile=$1
-                ;;
-        -g )    shift
-                genomeBuild=$1
-                ;;
-        -o )    shift
-                outDir=$1
-                ;;
-        -i )    shift
-                inputFile=$1
-                ;;
-        --delete )  shift
-                    delBamFile=true
-                    ;;
+        -b )            shift
+                        bamFile=$1
+                        ;;
+        -g )            shift
+                        genomeBuild=$1
+                        ;;
+        -o )            shift
+                        outDir=$1
+                        ;;
+        -i )            shift
+                        inputFile=$1
+                        ;;
+        --delete )      shift
+                        delBamFile=true
+                        ;;
         -h | --help )   for mod in "${modList[@]}"; do
                             module load $mod
                         done
                         samtools view
-                        module unload ${modList[1]}
-                        module unload ${modList[0]}
+                        for mod in "${modList[@]}"; do
+                            module unload $mod
+                        done
                         usage
                         exit 0
                         ;;
-        * )     for mod in "${modList[@]}"; do
-                    module load $mod
-                done
-                samtools view
-                module unload ${modList[1]}
-                module unload ${modList[0]}
-                usage
-                exit 1
+        * )             for mod in "${modList[@]}"; do
+                            module load $mod
+                        done
+                        samtools view
+                        for mod in "${modList[@]}"; do
+                            module unload $mod
+                        done
+                        usage
+                        exit 1
     esac
     shift
 done

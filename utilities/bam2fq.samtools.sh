@@ -68,18 +68,20 @@ while [ "$1" != "" ]; do
         -h | --help )   for mod in "${modList[@]}"; do
                             module load $mod
                         done
-                        samtools view
-                        module unload ${modList[1]}
-                        module unload ${modList[0]}
+                        samtools fastq
+                        for mod in "${modList[@]}"; do
+                            module unload $mod
+                        done
                         usage
                         exit 0
                         ;;
         * )     for mod in "${modList[@]}"; do
                     module load $mod
                 done
-                samtools view
-                module unload ${modList[1]}
-                module unload ${modList[0]}
+                samtools fastq
+                for mod in "${modList[@]}"; do
+                    module unload $mod
+                done
                 usage
                 exit 1
     esac
