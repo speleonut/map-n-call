@@ -13,9 +13,11 @@
 #SBATCH --mail-user=%u@adelaide.edu.au  	    # Email to which notification will be sent
 
 # revertSam.sh
-# Set location of picard.jar
-PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
-
+# Set environment
+whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+configDir="$(echo ${whereAmI} | sed -e 's,utilities,configs,g')"
+enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
+source ${enviroCfg}
 
 modList=("Java/17.0.6")
 usage()
@@ -106,7 +108,7 @@ for mod in "${modList[@]}"; do
 done
 
 #Do the thing
-java -Xmx16G -jar $PICARD RevertSam \
+$GATKPATH/gatk --java-options "-Xmx16G" RevertSam \
 I=$bamFile \
 O=$outDir/$sampleID.u.bam \
 MAX_RECORDS_IN_RAM=10000000 \
