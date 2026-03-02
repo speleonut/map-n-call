@@ -18,7 +18,7 @@
 source ${enviroCfg}
 
 
-modList=("R/4.3.1-foss-2021b" "Java/17.0.6" "Python/3.9.6-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0")
+modList=("R/4.3.1-foss-2021b" "Java/21.0.2" "Python/3.9.6-GCCcore-11.2.0" "HTSlib/1.17-GCC-11.2.0")
 
 usage()
 {

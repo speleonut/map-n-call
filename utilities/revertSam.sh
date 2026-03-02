@@ -19,7 +19,7 @@ configDir="$(echo ${whereAmI} | sed -e 's,utilities,configs,g')"
 enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
 source ${enviroCfg}
 
-modList=("Java/17.0.6")
+modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0")
 usage()
 {
 echo "# revertSam.sh Sort a BAM by read name then strip mapping info.  The result will be an unmapped BAM file.
