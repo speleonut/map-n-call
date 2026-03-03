@@ -14,12 +14,56 @@
 
 #Script Paths
 userDir=/hpcfs/users/${USER}
+refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 
-
+# Script settings
 modList=("SAMtools/1.17-GCC-11.2.0")
 nCores=10
 
-# bam2fq.samtools.sh
+# Script functions
+select_genome_build()
+{
+case "${genomeSize}" in
+    3099922541 )    buildID="GRCh38"
+                    genomeBuild="$refDir/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+                    ;;
+    3217346917 )    buildID="hs38DH"
+                    genomeBuild="$refDir/hs38DH.fa"
+                    ;;
+    3137454505 )    buildID="hs37d5"
+                    genomeBuild="$refDir/hs37d5.fa.gz"
+                    ;;
+    2730871774 )    buildID="GRCm38"   
+                    genomeBuild="$refDir/GRCm38_68.fa"
+                    ;;
+    3117463893 )    buildID="CHM13v2"
+                    genomeBuild="$refDir/T2T_CHM13v2.0.ucsc.ebv.fa.gz"
+                    ;;
+    3137161264 )    buildID="hg19"
+                    genomeBuild="$refDir/ucsc.hg19.fasta"
+                    ;;
+    3105715063 )    buildID="GRCh38.hs38d1.no_alt"
+                    genomeBuild="$refDir/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.gz"
+                    ;;
+    3215250450 )    buildID="GRCh38.hs38d1.full"
+                    genomeBuild="$refDir/GCA_000001405.15_GRCh38_full_plus_hs38d1_analysis_set.fna.gz"
+                    ;;
+    3099750718 )    buildID="GRCh38"
+                    genomeBuild="$refDir/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+                    ;;
+    3031042417 )    buildID="GRCh38.blacklist"
+                    genomeBuild="$refDir/Homo_sapiens.GRCh38.dna.primary_assembly.fa.r101.s501.blacklist.gz"
+                    ;;
+    3101804741 )    buildID="hg19_1stM_unmask_ran_all"
+                    genomeBuild="$refDir/hg19_1stM_unmask_ran_all.fa"
+                    ;;
+    * )         echo "## ERROR: Genome length $genomeSize for ${bamFile[SLURM_ARRAY_TASK_ID]} was not matched, you may need to specify the genome build directly using the -g flag."
+                exit 1
+                ;;
+esac
+echo "## INFO: The CRAM file ${bamFile[SLURM_ARRAY_TASK_ID]} was likely mapped to $buildID corresponding to the refseq $genomeBuild."
+}
+
 usage()
 {
 echo "# bam2fq.samtools.sh Sort a BAM by read name then convert to gzipped fastq files.
@@ -31,7 +75,7 @@ echo "# bam2fq.samtools.sh Sort a BAM by read name then convert to gzipped fastq
 #
 # Options:
 # -b <arg>           REQUIRED: Path to your bam file
-# -S <arg>           REQUIRED: ID of the sample which will form the first part of your fastq file names
+# -S <arg>           OPTIONAL: ID of the sample which will form the first part of your fastq file names. If not specified the sample name from the BAM file header will be used.
 # -o <arg>           OPTIONAL: Path to the output default: $userDir/sequences/sampleID/SLURM_JOB_ID
 # -h | --help        Prints the message you are reading.
 #
@@ -95,20 +139,31 @@ if [ ! -z "$inputFile" ]; then
 fi	
 if [ -z "$bamFile" ]; then # If bamFile not specified then do not proceed
     usage
-    echo "#ERROR: You need to specify -b /path/to/bam/file.bam
+    echo "## ERROR: You need to specify -b /path/to/bam/file.bam
     # -b <arg>    REQUIRED: Path to where your bam file is located"
     exit 1
 fi
-if [ -z "$sampleID" ]; then # If sample not specified then do not proceed
-    usage
-    echo "#ERROR: You need to specify -S sampleID because I need this to make your file names
-    # -S <arg>    ID of the sample which will form the first part of your fastq file names"
-    exit 1
+# Fetch the genome build by looking at the bam header and then use that to select the correct reference sequence.
+genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -f3 | cut -f2 -d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
+select_genome_build
+
+# Check the sample ID
+if [ -z "$sampleID" ]; then # If sample not specified then extract from the bam header
+    sampleID=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep "^@RG" | sed 's/.*SM:\([^[:space:]]\+\).*/\1/' | head -n 1)
+    echo "## INFO: No sample ID provided. Sample ID ${sampleID} extracted from the bam header will be used to name the output files."
+    if [ -z "$sampleID" ]; then # You've got problems!
+        echo "## ERROR: No sample ID provided and could not extract a sample ID from the bam header. Please check your bam file and/or provide a sample ID using the -S option."
+        usage
+        exit 1
+    fi
+else
+    sampleID=${sampleID[SLURM_ARRAY_TASK_ID]} # Capture the sample ID for this array job from the input file (or if was specified as an option then this won't change it).
 fi
 
-if [ -z "$outDir" ]; then # If output directory not specified then make one up
-    outDir=$userDir/sequences/${sampleID[SLURM_ARRAY_TASK_ID]}/$SLURM_JOB_ID
-    echo "#INFO: You didn't specify an output directory so I'm going to put your files here.
+# Check the output directory and if it wasn't provided create a default directory.
+if [ -z "$outDir" ]; then
+    outDir=$userDir/sequences/${sampleID}/$SLURM_JOB_ID
+    echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
     $outDir"
 fi
 if [ ! -d "$outDir" ]; then
@@ -125,9 +180,9 @@ for mod in "${modList[@]}"; do
 done
 
 # Revert BAMs to fastq
-echo "#INFO: Processing sample ${sampleID[SLURM_ARRAY_TASK_ID]}" # helps with troubleshooting array jobs
-samtools sort -l 0 -m 4G -n -@${nCores} -T$tmpDir ${bamFile[SLURM_ARRAY_TASK_ID]} |\
-samtools fastq -1 $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_R1.fastq.gz -2 $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID[SLURM_ARRAY_TASK_ID]}.reads_U1.fastq.gz -n -@${nCores} -
+echo "## INFO: Processing sample: ${sampleID}" # helps with troubleshooting array jobs
+samtools sort -l 0 -m 4G -n -@${nCores} -T$tmpDir --reference ${genomeBuild} ${bamFile[SLURM_ARRAY_TASK_ID]} |\
+samtools fastq -1 $outDir/${sampleID}.reads_R1.fastq.gz -2 $outDir/${sampleID}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID}.reads_U1.fastq.gz -n -@${nCores} -
 
-# Clean up and generate run stats
+# Clean up
 rm -r $tmpDir
