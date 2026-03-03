@@ -76,12 +76,12 @@ echo "# bam2fq.samtools.sh Sort a BAM by read name then convert to gzipped fastq
 # Options:
 # -b <arg>           REQUIRED: Path to your bam file
 # -S <arg>           OPTIONAL: ID of the sample which will form the first part of your fastq file names. If not specified the sample name from the BAM file header will be used.
-# -o <arg>           OPTIONAL: Path to the output default: $userDir/sequences/sampleID/SLURM_JOB_ID
+# -o <arg>           OPTIONAL: Path to the output. Note: the script will add the sample ID to this. Default: $userDir/sequences/bam2fq/sampleID
 # -h | --help        Prints the message you are reading.
 #
 # Array job options:
 # -i <arg>           REQUIRED: If running an array job a tab delimited text file with two columns listing the required arguments -b and -S from above (in that order).
-# -o <arg>           OPTIONAL: Path to the output default: $userDir/sequences/sampleID/SLURM_JOB_ID
+# -o <arg>           OPTIONAL: Path to the output. Note: the script will add the sample ID to this. default: $userDir/sequences/bam2fq/sampleID
 # -h | --help        Prints the message you are reading.
 #
 # History:
@@ -161,13 +161,13 @@ else
 fi
 
 # Check the output directory and if it wasn't provided create a default directory.
-if [ -z "$outDir" ]; then
-    outDir=$userDir/sequences/${sampleID}/$SLURM_JOB_ID
+if [ -z "${outDir}" ]; then
+    outDir=$userDir/sequences/bam2fq/${sampleID}
     echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
-    $outDir"
+    BAM2FQ_DIR:${outDir}"
 fi
-if [ ! -d "$outDir" ]; then
-    mkdir -p $outDir
+if [ ! -d "${outDir}" ]; then
+    mkdir -p ${outDir}/${sampleID}
 fi
 tmpDir=$outDir/tmp.$SLURM_JOB_ID
 if [ ! -d "$tmpDir" ]; then
@@ -182,7 +182,7 @@ done
 # Revert BAMs to fastq
 echo "## INFO: Processing sample: ${sampleID}" # helps with troubleshooting array jobs
 samtools sort -l 0 -m 4G -n -@${nCores} -T$tmpDir --reference ${genomeBuild} ${bamFile[SLURM_ARRAY_TASK_ID]} |\
-samtools fastq -1 $outDir/${sampleID}.reads_R1.fastq.gz -2 $outDir/${sampleID}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID}.reads_U1.fastq.gz -n -@${nCores} -
+samtools fastq -1 $outDir/${sampleID}/${sampleID}.reads_R1.fastq.gz -2 $outDir/${sampleID}/${sampleID}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID}/${sampleID}.reads_U1.fastq.gz -n -@${nCores} -
 
 # Clean up
 rm -r $tmpDir

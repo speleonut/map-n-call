@@ -4,6 +4,7 @@
 ## Hard coded paths for your system should be set in configs/BWA-GATKHC.environment.cfg ##
 whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
 configDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,configs,g')"
+utilitiesDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,utilities,g')"
 enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
 source ${enviroCfg}
 
@@ -61,26 +62,43 @@ if [ -z "${seqFile}" ]; then
     usage
     exit 1
 fi  
+numSamples=$(wc -l ${seqFile} | cut -d" " -f1)
+numTasks=$((${numSamples}-1))
 
 # Check the input file format and trust the user to have put the correct information in there (for now).
-if [ $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) -ne 3 ]; then
-    if [ -f $(head -n 1 ${seqFile}) ]; then
-        bamInput=true
-        echo "## INFO: ${seqFile} has $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) column. If that number is not 1 then there are some problems with the input file and bad things are going to happen."
+case $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) in
+    3)  echo "## INFO: Input file format suggests fastq file input."
+        bamInput=false
+        ;;
+    1)  if [ -f $(head -n 1 ${seqFile}) ]; then
+            bamInput=true
+        else
+            echo "## ERROR: The input file format suggests there should be a bam file but it does not exist.
+            BAM_FILE_CHECKED:$(head -n 1 ${seqFile})"
+            usage
+            exit 1
         fi
-else
-    bamInput=false
+        ;;
+    *) echo "## ERROR: The input file format is not correct. Please provide a text file with the required format using the -i option."
+       usage
+       exit 1
+       ;;
+esac
+if [ $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) -ne 3 ]; then
+    
 fi
 
 # Check the output directory and if it wasn't provided create a default directory.
 if [ -z "${outDir}" ]; then
-    outDir="${useDir}/variants/GATK4_universal_RNAseq_germline_snps_indels"
-    echo "## INFO: No output directory provided. A default directory will be created at ${outDir}."
+    outDir="${useDir}/variants/GATK4_universal_RNAseq_germline_snps_indels/$(date +%Y%m%d_%H%M%S)"
+    echo "## INFO: No output directory provided. A default directory will be created at 
+    OUTPUT_DIR:${outDir}."
 fi
 
 if [ ! -d "${outDir}" ]; then
     mkdir -p ${outDir}
-    echo "## INFO: New output directory created, you'll find all of the results from this pipeline here: ${outDir}"
+    echo "## INFO: New output directory created, you'll find all of the results from this pipeline here:
+    OUTPUT_DIR:${outDir}"
 fi
 
 # Check the config and if not specified use the default.
@@ -88,3 +106,19 @@ if [ -z "${config}" ]; then
     config="${configDir}/GATK4.RNAseq.germline.hg38.phoenix.cfg"
     echo "## INFO: No config file provided. A default config file will be used at ${config}."
 fi
+
+# Start coordinating slum jobs
+if [ "${bamInput}" = true ]; then
+    touch ${outDir}/sequences/STAR.input.list.txt
+    bam2fqJob=`sbatch --array=0-${numTasks} --export=ALL ${utilitiesDir}/bam2fq.samtools.sh -i ${seqFile} -o ${outDir}/sequences`
+    bam2fqJobID=$(echo $bam2fqJob | cut -d" " -f4)
+    makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
+    makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" "-f4)
+    seqFile=${outDir}/sequences/STAR.input.list.txt
+    STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
+else
+    STARmapJob=`sbatch --array=0-${numTasks} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
+fi
+
