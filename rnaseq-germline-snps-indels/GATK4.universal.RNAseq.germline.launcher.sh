@@ -104,21 +104,24 @@ fi
 # Check the config and if not specified use the default.
 if [ -z "${config}" ]; then
     config="${configDir}/GATK4.RNAseq.germline.hg38.phoenix.cfg"
-    echo "## INFO: No config file provided. A default config file will be used at ${config}."
+    echo "## INFO: No config file provided. A default config file will be used.
+    CONFIG_FILE:${config}."
 fi
 
 # Start coordinating slum jobs
 if [ "${bamInput}" = true ]; then
     touch ${outDir}/sequences/STAR.input.list.txt
-    bam2fqJob=`sbatch --array=0-${numTasks} --export=ALL ${utilitiesDir}/bam2fq.samtools.sh -i ${seqFile} -o ${outDir}/sequences`
+    bam2fqJob=`sbatch --array=0-${numTasks} --export=ALL,enviroCfg=${enviroCfg} ${utilitiesDir}/bam2fq.samtools.sh -i ${seqFile} -o ${outDir}/sequences`
     bam2fqJobID=$(echo $bam2fqJob | cut -d" " -f4)
-    makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
+    makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
     makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" "-f4)
     seqFile=${outDir}/sequences/STAR.input.list.txt
     STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
 else
-    STARmapJob=`sbatch --array=0-${numTasks} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    STARmapJob=`sbatch --array=0-${numTasks} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
 fi
 
+# Steps remaining from 
+# https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl
