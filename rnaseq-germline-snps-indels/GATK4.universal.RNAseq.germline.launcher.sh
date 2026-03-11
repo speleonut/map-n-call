@@ -125,6 +125,7 @@ fi
 
 markDupJob=`sbatch --dependency=afterok:${STARmapJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.markDuplicates.sh -i ${seqFile} -o ${outDir} -c ${config}`
 markDupJobID=$(echo $markDupJob | cut -d" " -f4)
-
+splitJob=`sbatch --dependency=afterok:${markDupJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.SplitNCigarReads.sh -i ${seqFile} -o ${outDir} -c ${config}`
+splitJobID=$(echo $splitJob | cut -d" " -f4)
 # Steps remaining from 
 # https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl

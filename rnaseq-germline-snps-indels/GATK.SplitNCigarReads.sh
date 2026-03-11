@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J SupaDupa
-#SBATCH -o /hpcfs/users/%u/log/SupaDupa-slurm-%j.out
+#SBATCH -J Splitsville
+#SBATCH -o /hpcfs/users/%u/log/SplitReads-slurm-%j.out
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1               	                                # number of nodes
 #SBATCH -n 2              	                                # number of cores
@@ -13,7 +13,7 @@
 #SBATCH --mail-type=FAIL   					# Type of email notifications will be sent (here set to FAIL, which means an email will be sent when the job is fail to complete)
 #SBATCH --mail-user=%u@adelaide.edu.au  	# Email to which notification will be sent
 
-# GATK.markDuplicates.sh
+# GATK.SplitNCigarReads.sh
 #Set some paths and define functions
 if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
     whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
@@ -27,7 +27,7 @@ modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0")
 
 usage()
 {
-echo "# GATK.markDuplicates.sh a slurm submission script for marking duplicates in RNA-seq BAM files. 
+echo "# GATK.SplitNCigarReads.sh a slurm submission script for marking duplicates in RNA-seq BAM files. 
 # Before running as a batch script you need to know the number of samples you have.
 #
 # Dependencies:  An input text file with one sampleID per line.  Other columns in the file will be ignored.
@@ -106,10 +106,8 @@ done
 
 # Do the thing!
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
-    MarkDuplicates \
-    --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.out.bam \
-    --OUTPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam  \
-    --CREATE_INDEX true \
-    --VALIDATION_STRINGENCY SILENT \
-    --METRICS_FILE $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.metrics \
+    SplitNCigarReads \
+    -R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+    -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam \
+    -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
     >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
