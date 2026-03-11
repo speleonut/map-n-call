@@ -4,9 +4,9 @@
 #SBATCH -o /hpcfs/users/%u/log/STARmap-slurm-%j.out
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1               	                                # number of nodes
-#SBATCH -n 10              	                                # number of cores
-#SBATCH --time=03:00:00    	                                # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=56G         	                                # memory pool for all cores
+#SBATCH -n 2              	                                # number of cores
+#SBATCH --time=10:00:00    	                                # time allocation, which has the format (D-HH:MM)
+#SBATCH --mem=8G         	                                # memory pool for all cores
 
 # Notification configuration 
 #SBATCH --mail-type=END					    # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
@@ -25,10 +25,10 @@ threads=8 # Set one less than n above
 
 usage()
 {
-echo "# STAR.map.sh.sh a slurm submission script for mapping Illumina paired end RNA-seq reads with STAR. 
+echo "# GATK.markDuplicates.sh a slurm submission script for marking duplicates in RNA-seq BAM files. 
 # Before running as a batch script you need to know the number of samples you have.
 #
-# Dependencies:  An input text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2 /path/to/optional_SV_file\"
+# Dependencies:  An input text file with one sampleID per line.  Other columns in the file will be ignored.
 #                The SLURM log directory must exist ${userDir}/log or submission to SLURM will fail
 #
 # Usage: sbatch --array 0-(n Samples-1) $0 -i inputFile.txt [-o /path/to/outDir -c /path/to/config.cfg ] | $0 [-h | --help]
@@ -76,7 +76,7 @@ done
 if [ -z "${SeqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
 	usage
 	echo "# ERROR: You need to specify the path and name of the sequence file list
-    # -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"sample-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2 /path/to/optional_SV_file\""
+    # -i	REQUIRED. Path and file name of a text file with one sample ID per line."
 	exit 1
 fi
 if [ -z "${Config}" ]; then # If no Config file specified use the default
@@ -87,31 +87,17 @@ source ${Config}
 
 # Define variables for the array jobs
 sampleID=($(awk -F" " '{print $1}' ${SeqFile}))
-read1=($(awk -F" " '{print $2}' ${SeqFile}))
-read2=($(awk -F" " '{print $3}' ${SeqFile}))
-read_length=$(zcat ${read1[SLURM_ARRAY_TASK_ID]} | sed -n '2p' | wc -c) # Get the read length from the first read in the first sample, assumes all reads are the same length
 
 if [ ! -d "${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}" ]; then
     mkdir -p ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}
 fi
 
-tmpDir="${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}_STARtmp"
-if [ -d "${tmpDir}" ]; then
-    rm -r "${tmpDir}"  # STAR likes to start with a clean tmp directory
-    echo "## WARN: A pre-existing STAR temporary directory ${tmpDir} was removed before starting this run.  This is usually occurs when a previous run failed."
+tmpDir="${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}_tmp"
+if [ ! -d "${tmpDir}" ]; then
+    mkdir -p "${tmpDir}"
 fi
 
 # Do the thing!
-$STAR_prog \
-    --runThreadN $threads \
-    --genomeDir $STAR_index_dir/$buildID --genomeLoad NoSharedMemory --outTmpDir $tmpDir\
-    --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
-    --outSAMtype BAM SortedByCoordinate \
-    --sjdbOverhang $((read_length-1)) \
-    --twopassMode Basic \
-    --limitBAMsortRAM 52000000000 \
-    --outFileNamePrefix $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/
-
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
     MarkDuplicates \
     --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.out.bam \
