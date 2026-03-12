@@ -5,7 +5,7 @@
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
-#SBATCH --time=04:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mem=8GB
 
 # Notification Configuration 
@@ -16,8 +16,12 @@
 # A script to apply base quality score recalibration using the GATK v4.x best practices
 
 ## List modules and file paths ##
+if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
+    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
+    configDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,configs,g')"
+    enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
+fi
 source ${enviroCfg}
-
 
 modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0")
 
@@ -26,10 +30,10 @@ usage()
 echo "# A script to apply base quality score recalibration using the GATK v4.x best practices
 # Requires: GATKv4.x
 #
-# Usage: sbatch --array 0-23 $0 -S sample_name [ -o /path/to/output -c /path/to/config.cfg ] | [ - h | --help ]
+# Usage: sbatch --array 0-(number of samples - 1) $0 -i inputFile.txt [ -o /path/to/output -c /path/to/config.cfg ] | [ - h | --help ]
 #
 # Options
-# -S	REQUIRED. Sample name if not specified then will be set the same as -p
+# -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2\"
 # -c	OPTIONAL. /path/to/Config.cfg. A default Config will be used if this is not specified.  The Config contains all of the stuff that used to be set in the top part of our scripts
 # -o	OPTIONAL. Path to where you want to find your file output (if not specified current directory is used)
 # -h or --help	Prints this message.  Or if you got one of the options above wrong you'll be reading this too!
@@ -46,6 +50,7 @@ echo "# A script to apply base quality score recalibration using the GATK v4.x b
 # 18/11/2016; Mark Corbett; Step down number of splits for PrintReads for higher efficiency
 # 17/05/2017; Atma Ivancevic; translating for SLURM
 # 16/11/2017; Mark Corbett; Fork to split scripts to see if this works on Phoenix; swap Picard for sambamba for duplicate marking
+# 12/03/2026; Mark Corbett; Fork from GATK4 and switch back to applying BQSR without splitting the bam file.
 #
 "
 }

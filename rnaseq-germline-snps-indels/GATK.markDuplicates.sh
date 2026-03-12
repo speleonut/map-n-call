@@ -38,8 +38,7 @@ echo "# GATK.markDuplicates.sh a slurm submission script for marking duplicates 
 # Usage: sbatch --array 0-(n Samples-1)%8 $0 -i inputFile.txt [ -o /path/to/outDir -c /path/to/config.cfg ] | $0 [-h | --help]
 #
 # Options: 
-# -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2 /path/to/optional_SV_file\"
-#                 The optional SV file can be a VCF or a tab-delimited file as specified in the ARRIBA documents: https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs
+# -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2\"
 # -c	OPTIONAL. Path to a config file for the genome to be mapped. Default is GATK.RNAseq.germline.hg38.phoenix.cfg. 
 # -o	OPTIONAL. Path to where you want to find your files, the default is $userDir/RNASeq/arriba/genomeBuild/. 
 #                 Each analyses will be put in a subfolder of this output directory using the sampleID if you use the default, or specifiy the directory yourself.
