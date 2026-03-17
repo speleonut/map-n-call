@@ -61,7 +61,7 @@ while [ "$1" != "" ]; do
         -c )            shift
                         Config=$1
                         ;;
-        -S )            shift
+        -i )            shift
                         Sample=$1
                         ;;
         -o )            shift
@@ -76,67 +76,45 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ -z "$Sample" ]; then # If no Sample name specified then do not proceed
+if [ -z "${SeqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
 	usage
-	echo "## ERROR: You need to specify a Sample name that refers to your .bam file \$Sample.marked.sort.bwa.$BUILD.bam."
+	echo "# ERROR: You need to specify the path and name of the sequence file list
+    # -i	REQUIRED. Path and file name of a text file with one sample ID per line."
 	exit 1
 fi
-
-if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
-    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
-    configDir="$(echo ${whereAmI} | sed -e 's,GATK4,configs,g')"
-    source ${configDir}/BWA-GATKHC.environment.cfg
-    if [ ! -d "${logDir}" ]; then
-        mkdir -p ${logDir}
-        echo "## INFO: New log directory created, you'll find all of the log information from this pipeline here: ${logDir}"
-    fi
-    tmpDir=${tmpDir}/${Sample}
-    if [ ! -d "$tmpDir" ]; then
-        mkdir -p $tmpDir
-    fi
-fi
-
-if [ -z "$Config" ]; then # If no Config file specified use the default
-    Config=$scriptDir/configs/BWA-GATKHC.hs38DH_phoenix.cfg
+if [ -z "${Config}" ]; then # If no Config file specified use the default
+    Config=${scriptDir}/configs/GATK.RNAseq.germline.hg38.phoenix.cfg
     echo "## INFO: Using the default config ${Config}"
 fi
-source $Config
+source ${Config}
 
-if [ -z "$workDir" ]; then # If no output directory then use current directory
-	workDir=${userDir}/alignments/$Sample
-	echo "## INFO: Using $workDir as the output directory"
+# Define variables for the array jobs
+sampleID=($(awk -F" " '{print $1}' ${SeqFile}))
+
+if [ ! -d "${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}" ]; then
+    mkdir -p ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}
 fi
-	
-## Define the array for the batch job ##
-bedFile=($arrIndexBedFiles)
 
-## Prepare for the next steps in the pipeline ##
-# First make tmp dirs to hold files of each genome interval
-for bed in $arrIndexBedFiles; do
-	mkdir -p $tmpDir/$bed
-done
+tmpDir="${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}_tmp"
+if [ ! -d "${tmpDir}" ]; then
+    mkdir -p "${tmpDir}"
+fi
 
 ## Load modules ##
 for mod in "${modList[@]}"; do
     module load $mod
 done
 
+
 ## Start of the script ##
 # ApplyBQSR replaces PrintReads in GATK4 for the application of base quality score recalibration
 # You should only run ApplyBQSR with the covariates table created from the input BAM
  
-cd $tmpDir
-if [ -f "${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai" ]; then # Check if this is a re-run
-    echo "## INFO: The file ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bai was detected suggesting this genome segment was completed successfully.
-Skipping re-run.  To avoid this behaviour clear all .bam and .bai files from ${tmpDir}." >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log
-    exit 0
-else
-    $GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" ApplyBQSR \
-        -R $GATKREFPATH/$BUILD/$GATKINDEX \
-        -I $workDir/$Sample.marked.sort.bwa.$BUILD.bam \
-        -L $ChrIndexPath/${bedFile[$SLURM_ARRAY_TASK_ID]} \
-        -bqsr $tmpDir/$Sample.recal.grp \
-        --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
-        --emit-original-quals true \
-        -O ${bedFile[$SLURM_ARRAY_TASK_ID]}.$Sample.recal.sorted.bwa.$BUILD.bam >> $tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}.${Sample}.${BUILD}.pipeline.log 2>&1
-fi
+$GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir" ApplyBQSR \
+    -R $GATKREFPATH/$BUILD/$GATKINDEX \
+    -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
+    --bqsr-recal-file $tmpDir/${sampleID[$SLURM_ARRAY_TASK_ID]}.recal.grp \
+    --add-output-sam-program-record \ \
+    --use-original-qualities \
+    -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
+    >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
