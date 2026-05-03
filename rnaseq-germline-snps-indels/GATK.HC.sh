@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J ApplyBQSR
-#SBATCH -o /hpcfs/users/%u/log/applyBQSR-slurm-%j.out
+#SBATCH -J GATKHC
+#SBATCH -o /hpcfs/users/%u/log/GATK4HC-slurm-%j.out
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
@@ -13,27 +13,23 @@
 #SBATCH --mail-type=FAIL                                        
 #SBATCH --mail-user=%u@adelaide.edu.au
 
-# A script to apply base quality score recalibration using the GATK v4.x best practices
+# A script to call variants using the GATK v4.x best practices designed for the Phoenix supercomputer but will work on stand alone machines too
 
 ## List modules and file paths ##
-if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently of the Universal Launcher script
-    whereAmI="$(dirname "$(readlink -f "$0")")" # Assumes that the script is linked to the git repo and the driectory structure is not broken
-    configDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,configs,g')"
-    enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
-fi
 source ${enviroCfg}
+
 
 modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0")
 
 usage()
 {
-echo "# A script to apply base quality score recalibration using the GATK v4.x best practices
+echo "# A script to call variants on RNAseq data using the GATK v4.x best practices
 # Requires: GATKv4.x
 #
-# Usage: sbatch --array 0-(number of samples - 1) $0 -i inputFile.txt [ -o /path/to/output -c /path/to/config.cfg ] | [ - h | --help ]
+# Usage: sbatch --array 0-23 $0 -S sample_name [ -o /path/to/output -c /path/to/config.cfg ] | [ - h | --help ]
 #
 # Options
-# -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2\"
+# -S	REQUIRED. Sample name if not specified then will be set the same as -p
 # -c	OPTIONAL. /path/to/Config.cfg. A default Config will be used if this is not specified.  The Config contains all of the stuff that used to be set in the top part of our scripts
 # -o	OPTIONAL. Path to where you want to find your file output (if not specified current directory is used)
 # -h or --help	Prints this message.  Or if you got one of the options above wrong you'll be reading this too!
@@ -50,7 +46,6 @@ echo "# A script to apply base quality score recalibration using the GATK v4.x b
 # 18/11/2016; Mark Corbett; Step down number of splits for PrintReads for higher efficiency
 # 17/05/2017; Atma Ivancevic; translating for SLURM
 # 16/11/2017; Mark Corbett; Fork to split scripts to see if this works on Phoenix; swap Picard for sambamba for duplicate marking
-# 12/03/2026; Mark Corbett; Fork from GATK4 and switch back to applying BQSR without splitting the bam file.
 #
 "
 }
@@ -62,7 +57,7 @@ while [ "$1" != "" ]; do
                         Config=$1
                         ;;
         -i )            shift
-                        SeqFile=$1
+                        seqFile=$1
                         ;;
         -o )            shift
                         outDir=$1
@@ -105,14 +100,16 @@ for mod in "${modList[@]}"; do
     module load $mod
 done
 
-
 ## Start of the script ##
- 
-$GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir" ApplyBQSR \
-    -R $GATKREFPATH/$BUILD/$GATKINDEX \
-    -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
-    --bqsr-recal-file $tmpDir/${sampleID[$SLURM_ARRAY_TASK_ID]}.recal.grp \
-    --add-output-sam-program-record \ \
-    --use-original-qualities \
-    -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
-    >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
+# Note: ${Interval_BED} is set in the GATK4.RNAseq.germline.hg38.phoenix.cfg file.
+
+cd $tmpDir
+${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir/${bedFile[$SLURM_ARRAY_TASK_ID]}" HaplotypeCaller \
+-I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
+-R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+-L ${Interval_BED} \
+--dbsnp ${GATKREFPATH}/${BUILD}/${DBSNP} \
+--standard-min-confidence-threshold-for-calling 20 \
+-dont-use-soft-clipped-bases \
+-O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.vcf.gz \
+>> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1

@@ -127,5 +127,11 @@ markDupJob=`sbatch --dependency=afterok:${STARmapJobID} --export=ALL,enviroCfg=$
 markDupJobID=$(echo $markDupJob | cut -d" " -f4)
 splitJob=`sbatch --dependency=afterok:${markDupJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.SplitNCigarReads.sh -i ${seqFile} -o ${outDir} -c ${config}`
 splitJobID=$(echo $splitJob | cut -d" " -f4)
+bqsrJob=`sbatch --dependency=afterok:${splitJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.BQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
+bqsrJobID=$(echo $bqsrJob | cut -d" " -f4)
+applyBQSRJob=`sbatch --dependency=afterok:${bqsrJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.ApplyBQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
+applyBQSRJobID=$(echo $applyBQSRJob | cut -d" " -f4)
+HCJob=`sbatch --dependency=afterok:${applyBQSRJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.HC.sh -i ${seqFile} -o ${outDir} -c ${config}`
+HCJobID=$(echo $HCJob | cut -d" " -f4)
 # Steps remaining from 
 # https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl
