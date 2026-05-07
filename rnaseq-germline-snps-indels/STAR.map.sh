@@ -104,7 +104,7 @@ fi
 # Do the thing!
 $STAR_prog \
     --runThreadN $threads \
-    --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir\
+    --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir \
     --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
     --outSAMtype BAM SortedByCoordinate \
     --sjdbOverhang $((read_length-1)) \

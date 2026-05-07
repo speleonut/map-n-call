@@ -143,6 +143,12 @@ if [ -z "$bamFile" ]; then # If bamFile not specified then do not proceed
     # -b <arg>    REQUIRED: Path to where your bam file is located"
     exit 1
 fi
+
+# Load modules
+for mod in "${modList[@]}"; do
+    module load $mod
+done
+
 # Fetch the genome build by looking at the bam header and then use that to select the correct reference sequence.
 genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -f3 | cut -f2 -d":" | awk '{s+=$1} END {printf "%.0f\n", s}' -)
 select_genome_build
@@ -173,11 +179,6 @@ tmpDir=$outDir/tmp.$SLURM_JOB_ID
 if [ ! -d "$tmpDir" ]; then
     mkdir -p $tmpDir
 fi
-
-# Load modules
-for mod in "${modList[@]}"; do
-    module load $mod
-done
 
 # Revert BAMs to fastq
 echo "## INFO: Processing sample: ${sampleID}" # helps with troubleshooting array jobs
