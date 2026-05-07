@@ -84,13 +84,10 @@ case $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) in
        exit 1
        ;;
 esac
-if [ $(awk -F"\t" 'NR==1{print NF}' ${seqFile}) -ne 3 ]; then
-    
-fi
 
 # Check the output directory and if it wasn't provided create a default directory.
 if [ -z "${outDir}" ]; then
-    outDir="${useDir}/variants/GATK4_universal_RNAseq_germline_snps_indels/$(date +%Y%m%d_%H%M%S)"
+    outDir="${userDir}/variants/GATK4_universal_RNAseq_germline_snps_indels/$(date +%Y%m%d_%H%M%S)"
     echo "## INFO: No output directory provided. A default directory will be created at 
     OUTPUT_DIR:${outDir}."
 fi
@@ -128,16 +125,16 @@ else
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
 fi
 
-markDupJob=`sbatch --dependency=afterok:${STARmapJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.markDuplicates.sh -i ${seqFile} -o ${outDir} -c ${config}`
+markDupJob=`sbatch --array=0-${numTasks} --dependency=afterok:${STARmapJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.markDuplicates.sh -i ${seqFile} -o ${outDir} -c ${config}`
 markDupJobID=$(echo $markDupJob | cut -d" " -f4)
-splitJob=`sbatch --dependency=afterok:${markDupJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.SplitNCigarReads.sh -i ${seqFile} -o ${outDir} -c ${config}`
+splitJob=`sbatch --array=0-${numTasks} --dependency=afterok:${markDupJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.SplitNCigarReads.sh -i ${seqFile} -o ${outDir} -c ${config}`
 splitJobID=$(echo $splitJob | cut -d" " -f4)
-bqsrJob=`sbatch --dependency=afterok:${splitJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.BQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
+bqsrJob=`sbatch --array=0-${numTasks} --dependency=afterok:${splitJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.BQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
 bqsrJobID=$(echo $bqsrJob | cut -d" " -f4)
-applyBQSRJob=`sbatch --dependency=afterok:${bqsrJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.ApplyBQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
+applyBQSRJob=`sbatch --array=0-${numTasks} --dependency=afterok:${bqsrJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.ApplyBQSR.sh -i ${seqFile} -o ${outDir} -c ${config}`
 applyBQSRJobID=$(echo $applyBQSRJob | cut -d" " -f4)
-HCJob=`sbatch --dependency=afterok:${applyBQSRJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.HC.sh -i ${seqFile} -o ${outDir} -c ${config}`
+HCJob=`sbatch --array=0-${numTasks} --dependency=afterok:${applyBQSRJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.HC.sh -i ${seqFile} -o ${outDir} -c ${config}`
 HCJobID=$(echo $HCJob | cut -d" " -f4)
-VFJob=`sbatch --dependency=afterok:${HCJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.VariantFiltration.sh -i ${seqFile} -o ${outDir} -c ${config}`
+VFJob=`sbatch --array=0-${numTasks} --dependency=afterok:${HCJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.VariantFiltration.sh -i ${seqFile} -o ${outDir} -c ${config}`
 VFJobID=$(echo $VFJob | cut -d" " -f4)
 
