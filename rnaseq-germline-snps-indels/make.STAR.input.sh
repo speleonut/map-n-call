@@ -27,6 +27,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+seqPath="$1"
+
 if [ ! -d "$seqPath" ]; then
     echo "Usage: $0 /path/to/sequence/file/folders
     ## ERROR: $seqPath is not a directory"

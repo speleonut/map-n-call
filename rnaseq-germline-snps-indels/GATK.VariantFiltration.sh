@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J GATKHC
-#SBATCH -o /hpcfs/users/%u/log/GATK4HC-slurm-%j.out
+#SBATCH -J GATKVF
+#SBATCH -o /hpcfs/users/%u/log/GATK4VF-slurm-%j.out
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
@@ -104,12 +104,14 @@ done
 # Note: ${Interval_BED} is set in the GATK4.RNAseq.germline.hg38.phoenix.cfg file.
 
 cd $tmpDir
-${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" HaplotypeCaller \
--I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
--R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
--L ${Interval_BED} \
---dbsnp ${GATKREFPATH}/${BUILD}/${DBSNP} \
---standard-min-confidence-threshold-for-calling 20 \
--dont-use-soft-clipped-bases \
--O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.vcf.gz \
+${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" VariantFiltration  \
+--V ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.vcf.gz \
+--R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+--window 35 \
+--cluster 3 \
+--filter-name "FS" \
+--filter "FS > 30.0" \
+--filter-name "QD" \
+--filter "QD < 2.0" \
+-O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.filt.vcf.gz \
 >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1

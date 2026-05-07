@@ -57,7 +57,7 @@ echo "# GATK.SplitNCigarReads.sh a slurm submission script for marking duplicate
 while [ "$1" != "" ]; do
     case $1 in
         -i )    shift
-                SeqFile=$1
+                seqFile=$1
                 ;;
         -c )    shift
                 Config=$1
@@ -75,7 +75,7 @@ while [ "$1" != "" ]; do
 done
 
 # Check that your script has everything it needs to start.
-if [ -z "${SeqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
+if [ -z "${seqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
 	usage
 	echo "# ERROR: You need to specify the path and name of the sequence file list
     # -i	REQUIRED. Path and file name of a text file with one sample ID per line."
@@ -88,7 +88,7 @@ fi
 source ${Config}
 
 # Define variables for the array jobs
-sampleID=($(awk -F" " '{print $1}' ${SeqFile}))
+sampleID=($(awk -F" " '{print $1}' ${seqFile}))
 
 if [ ! -d "${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}" ]; then
     mkdir -p ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}

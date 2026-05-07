@@ -108,13 +108,18 @@ if [ -z "${config}" ]; then
     CONFIG_FILE:${config}."
 fi
 
-# Start coordinating slum jobs
+# Workflow references:
+# https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl
+
+# Coordinate slum jobs
+
 if [ "${bamInput}" = true ]; then
+    mkdir -p ${outDir}/sequences
     touch ${outDir}/sequences/STAR.input.list.txt
     bam2fqJob=`sbatch --array=0-${numTasks} --export=ALL,enviroCfg=${enviroCfg} ${utilitiesDir}/bam2fq.samtools.sh -i ${seqFile} -o ${outDir}/sequences`
     bam2fqJobID=$(echo $bam2fqJob | cut -d" " -f4)
     makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
-    makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" "-f4)
+    makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" " -f4)
     seqFile=${outDir}/sequences/STAR.input.list.txt
     STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
@@ -133,5 +138,6 @@ applyBQSRJob=`sbatch --dependency=afterok:${bqsrJobID} --export=ALL,enviroCfg=${
 applyBQSRJobID=$(echo $applyBQSRJob | cut -d" " -f4)
 HCJob=`sbatch --dependency=afterok:${applyBQSRJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.HC.sh -i ${seqFile} -o ${outDir} -c ${config}`
 HCJobID=$(echo $HCJob | cut -d" " -f4)
-# Steps remaining from 
-# https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl
+VFJob=`sbatch --dependency=afterok:${HCJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.VariantFiltration.sh -i ${seqFile} -o ${outDir} -c ${config}`
+VFJobID=$(echo $VFJob | cut -d" " -f4)
+
