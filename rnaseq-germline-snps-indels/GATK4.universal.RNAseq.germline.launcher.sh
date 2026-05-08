@@ -118,7 +118,7 @@ if [ "${bamInput}" = true ]; then
     makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
     makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" " -f4)
     seqFile=${outDir}/sequences/STAR.input.list.txt
-    STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
 else
     STARmapJob=`sbatch --array=0-${numTasks} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
