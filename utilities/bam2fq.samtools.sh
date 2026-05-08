@@ -154,10 +154,10 @@ genomeSize=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep @SQ | cut -
 select_genome_build
 
 # Check the sample ID
-if [ -z "$sampleID" ]; then # If sample not specified then extract from the bam header
+if [ -z "${sampleID}" ]; then # If sample not specified then extract from the bam header
     sampleID=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep "^@RG" | sed 's/.*SM:\([^[:space:]]\+\).*/\1/' | head -n 1)
     echo "## INFO: No sample ID provided. Sample ID ${sampleID} extracted from the bam header will be used to name the output files."
-    if [ -z "$sampleID" ]; then # Take a last resort and pull it from the file name.
+    if [ -z "${sampleID}" ]; then # Take a last resort and pull it from the file name.
         sampleID=$(basename ${bamFile[SLURM_ARRAY_TASK_ID]} | sed 's/\..*//') # Take the bam file name and remove the extension to get the sample ID
         echo "## WARN: Sample ID ${sampleID} was extracted from the bam file name.  This is not ideal and there is a risk the Sample ID is not unique."
     fi
@@ -167,21 +167,21 @@ fi
 
 # Check the output directory and if it wasn't provided create a default directory.
 if [ -z "${outDir}" ]; then
-    outDir=$userDir/sequences/bam2fq/${sampleID}
+    outDir=${userDir}/sequences/bam2fq/${sampleID}
     echo "## INFO: You didn't specify an output directory so I'm going to put your files here ${outDir}"
 fi
-if [ ! -d "${outDir}" ]; then
+if [ ! -d "${outDir}/${sampleID}" ]; then
     mkdir -p ${outDir}/${sampleID}
 fi
-tmpDir=$outDir/tmp.$SLURM_JOB_ID
-if [ ! -d "$tmpDir" ]; then
-    mkdir -p $tmpDir
+tmpDir=$outDir/tmp.${SLURM_JOB_ID}
+if [ ! -d "${tmpDir}" ]; then
+    mkdir -p ${tmpDir}
 fi
 
 # Revert BAMs to fastq
 echo "## INFO: Processing sample: ${sampleID}" # helps with troubleshooting array jobs
-samtools sort -l 0 -m 4G -n -@${nCores} -T$tmpDir --reference ${genomeBuild} ${bamFile[SLURM_ARRAY_TASK_ID]} |\
-samtools fastq -1 $outDir/${sampleID}/${sampleID}.reads_R1.fastq.gz -2 $outDir/${sampleID}/${sampleID}.reads_R2.fastq.gz -0 /dev/null -s $outDir/${sampleID}/${sampleID}.reads_U1.fastq.gz -n -@${nCores} -
+samtools sort -l 0 -m 4G -n -@${nCores} -T${tmpDir} --reference ${genomeBuild} ${bamFile[SLURM_ARRAY_TASK_ID]} |\
+samtools fastq -1 ${outDir}/${sampleID}/${sampleID}.reads_R1.fastq.gz -2 ${outDir}/${sampleID}/${sampleID}.reads_R2.fastq.gz -0 /dev/null -s ${outDir}/${sampleID}/${sampleID}.reads_U1.fastq.gz -n -@${nCores} -
 
 # Clean up
-rm -r $tmpDir
+rm -r ${tmpDir}
