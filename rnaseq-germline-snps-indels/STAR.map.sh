@@ -90,6 +90,7 @@ sampleID=($(awk -F" " '{print $1}' ${SeqFile}))
 read1=($(awk -F" " '{print $2}' ${SeqFile}))
 read2=($(awk -F" " '{print $3}' ${SeqFile}))
 read_length=$(zcat ${read1[SLURM_ARRAY_TASK_ID]} | sed -n '2p' | wc -c) # Get the read length from the first read in the first sample, assumes all reads are the same length
+ID=$(cut -f1 ${read1[$SLURM_ARRAY_TASK_ID]} -d"," | zcat - | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${sampleID[$SLURM_ARRAY_TASK_ID]} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
 
 if [ ! -d "${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}" ]; then
     mkdir -p ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}
@@ -106,6 +107,8 @@ $STAR_prog \
     --runThreadN $threads \
     --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir \
     --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
+    --outSAMattrRGline ID:"${ID}"$'\t'PL:ILLUMINA$'\t'SM:"${sampleID[$SLURM_ARRAY_TASK_ID]}" \
+    --outSAMattributes RG \
     --outSAMtype BAM SortedByCoordinate \
     --sjdbOverhang 100 \
     --twopassMode Basic \
