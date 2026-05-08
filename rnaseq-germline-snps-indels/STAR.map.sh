@@ -107,7 +107,7 @@ $STAR_prog \
     --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir \
     --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
     --outSAMtype BAM SortedByCoordinate \
-    --sjdbOverhang $((read_length-1)) \
+    --sjdbOverhang 100 \
     --twopassMode Basic \
     --limitBAMsortRAM 52000000000 \
     --outFileNamePrefix $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/
