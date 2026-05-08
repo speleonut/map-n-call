@@ -29,28 +29,28 @@ fi
 
 seqPath="$1"
 
-if [ ! -d "$seqPath" ]; then
+if [ ! -d "${seqPath}" ]; then
     echo "Usage: $0 /path/to/sequence/file/folders
-    ## ERROR: $seqPath is not a directory"
+    ## ERROR: ${seqPath} is not a directory"
     exit 1
 fi
 
 # Fetch sample ID from the folder names.
-
+cd ${seqPath}
 ls -d */ | cut -f1 -d"/" | sort | uniq > $seqPath/tmp.make.STAR.input.SampleID.txt # Temporary filename
 
 while read i; do
-	find ${seqPath}/${i}/ -name "*.gz" > $i.files.txt
-	grep R1.f $i.files.txt > R1.tmp.txt
-	grep R2.f $i.files.txt > R2.tmp.txt
-	rm $i.files.txt
+	find ${seqPath}/${i}/ -name "*.gz" > ${i}.files.txt
+	grep R1.f ${i}.files.txt > R1.tmp.txt
+	grep R2.f ${i}.files.txt > R2.tmp.txt
+	rm ${i}.files.txt
 	# for this next bit the code comes from
 	# http://unix.stackexchange.com/questions/114943/can-sed-replace-new-line-characters
 	# it works!
 	sed ':a;N;$!ba;s/\n/,/g' R1.tmp.txt >> R1.tmp.list.txt
 	sed ':a;N;$!ba;s/\n/,/g' R2.tmp.txt >> R2.tmp.list.txt
 	rm R1.tmp.txt R2.tmp.txt
-done < $seqPath/tmp.make.STAR.input.SampleID.txt
+done < ${seqPath}/tmp.make.STAR.input.SampleID.txt
 
-paste $seqPath/tmp.make.STAR.input.SampleID.txt R1.tmp.list.txt R2.tmp.list.txt > $seqPath/STAR.input.list.txt
-rm R1.tmp.list.txt R2.tmp.list.txt $seqPath/tmp.make.STAR.input.SampleID.txt
+paste ${seqPath}/tmp.make.STAR.input.SampleID.txt R1.tmp.list.txt R2.tmp.list.txt > ${seqPath}/STAR.input.list.txt
+rm R1.tmp.list.txt R2.tmp.list.txt ${seqPath}/tmp.make.STAR.input.SampleID.txt
