@@ -106,7 +106,7 @@ done
 # Do the thing!
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
     MarkDuplicates \
-    --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.out.bam \
+    --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam \
     --OUTPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam  \
     --CREATE_INDEX true \
     --VALIDATION_STRINGENCY SILENT \
