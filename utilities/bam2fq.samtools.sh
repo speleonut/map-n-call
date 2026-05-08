@@ -157,10 +157,9 @@ select_genome_build
 if [ -z "$sampleID" ]; then # If sample not specified then extract from the bam header
     sampleID=$(samtools view -H ${bamFile[SLURM_ARRAY_TASK_ID]} | grep "^@RG" | sed 's/.*SM:\([^[:space:]]\+\).*/\1/' | head -n 1)
     echo "## INFO: No sample ID provided. Sample ID ${sampleID} extracted from the bam header will be used to name the output files."
-    if [ -z "$sampleID" ]; then # You've got problems!
-        echo "## ERROR: No sample ID provided and could not extract a sample ID from the bam header. Please check your bam file and/or provide a sample ID using the -S option."
-        usage
-        exit 1
+    if [ -z "$sampleID" ]; then # Take a last resort and pull it from the file name.
+        sampleID=$(basename ${bamFile[SLURM_ARRAY_TASK_ID]} | sed 's/\..*//') # Take the bam file name and remove the extension to get the sample ID
+        echo "## WARN: Sample ID ${sampleID} was extracted from the bam file name.  This is not ideal and there is a risk the Sample ID is not unique."
     fi
 else
     sampleID=${sampleID[SLURM_ARRAY_TASK_ID]} # Capture the sample ID for this array job from the input file (or if was specified as an option then this won't change it).
@@ -169,8 +168,7 @@ fi
 # Check the output directory and if it wasn't provided create a default directory.
 if [ -z "${outDir}" ]; then
     outDir=$userDir/sequences/bam2fq/${sampleID}
-    echo "## INFO: You didn't specify an output directory so I'm going to put your files here.
-    BAM2FQ_DIR:${outDir}"
+    echo "## INFO: You didn't specify an output directory so I'm going to put your files here ${outDir}"
 fi
 if [ ! -d "${outDir}" ]; then
     mkdir -p ${outDir}/${sampleID}
