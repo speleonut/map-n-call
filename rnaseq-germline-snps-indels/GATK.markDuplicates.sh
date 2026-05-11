@@ -22,8 +22,8 @@ if [ -z "${enviroCfg}" ]; then # Test if the script was executed independently o
 fi
 source ${enviroCfg}
 threads=8 # Set one less than n above
-
-modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0")
+MODULEPATH=${MODULEPATH}:${customModulePath} # To load a compatible samtools. The $customModulePath variable is defined in the environment config file.
+modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0" "SAMtools/1.18-GCC-12.3.0")
 
 usage()
 {
@@ -103,12 +103,18 @@ for mod in "${modList[@]}"; do
     module load $mod
 done
 
+# Check for MGI read names
+readName=$( samtools view ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam | head -n 1 | cut -f 1 )
+if [[ "${readName}" != *":"* ]]; then
+    readNameRegex="--READ_NAME_REGEX null" # This should deal with read names that don't follow Illumina format.
+fi
+
 # Do the thing!
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
     MarkDuplicates \
     --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam \
     --OUTPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam  \
     --CREATE_INDEX true \
-    --VALIDATION_STRINGENCY SILENT \
+    --VALIDATION_STRINGENCY SILENT ${readNameRegex}\
     --METRICS_FILE $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.metrics \
     >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
