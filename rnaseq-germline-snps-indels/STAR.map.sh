@@ -107,8 +107,7 @@ $STAR_prog \
     --runThreadN $threads \
     --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir \
     --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
-    --outSAMattrRGline ID:"${ID}"$'\t'PL:ILLUMINA$'\t'SM:"${sampleID[$SLURM_ARRAY_TASK_ID]}" \
-    --outSAMattributes RG \
+    --outSAMattrRGline ID:"${ID}" PL:ILLUMINA SM:"${sampleID[$SLURM_ARRAY_TASK_ID]}" --outSAMattributes RG \
     --outSAMtype BAM SortedByCoordinate \
     --sjdbOverhang 100 \
     --twopassMode Basic \
