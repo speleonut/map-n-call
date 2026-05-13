@@ -107,7 +107,7 @@ done
 # Do the thing!
 $GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
     SplitNCigarReads \
-    -R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+    -R ${GATKREFPATH}/${GATK_BUILD}/${GATKINDEX} \
     -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam \
     -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
     >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1

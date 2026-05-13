@@ -107,12 +107,12 @@ done
 
 # Base quality score recalibration
 $GATKPATH/gatk --java-options "-Xmx28g -Djava.io.tmpdir=$tmpDir" BaseRecalibrator \
--R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+-R ${GATKREFPATH}/${GATK_BUILD}/${GATKINDEX} \
 -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
 --use-original-qualities \
---known-sites ${GATKREFPATH}/${BUILD}/${DBSNP} \
---known-sites ${GATKREFPATH}/${BUILD}/${OneKg_INDELS} \
---known-sites ${GATKREFPATH}/${BUILD}/${Mills_INDELS} \
+--known-sites ${GATKREFPATH}/${GATK_BUILD}/${DBSNP} \
+--known-sites ${GATKREFPATH}/${GATK_BUILD}/${OneKg_INDELS} \
+--known-sites ${GATKREFPATH}/${GATK_BUILD}/${Mills_INDELS} \
 --output $tmpDir/${sampleID[$SLURM_ARRAY_TASK_ID]}.recal.grp \
  >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
 

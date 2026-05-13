@@ -106,7 +106,7 @@ done
 cd $tmpDir
 ${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" VariantFiltration  \
 --V ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.vcf.gz \
---R ${GATKREFPATH}/${BUILD}/${GATKINDEX} \
+--R ${GATKREFPATH}/${GATK_BUILD}/${GATKINDEX} \
 --window 35 \
 --cluster 3 \
 --filter-name "FS" \

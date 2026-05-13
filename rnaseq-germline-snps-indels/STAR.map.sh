@@ -104,12 +104,12 @@ fi
 
 # Do the thing!
 $STAR_prog \
-    --runThreadN $threads \
-    --genomeDir $STAR_index_dir --genomeLoad NoSharedMemory --outTmpDir $tmpDir \
+    --runThreadN ${threads} \
+    --genomeDir ${STAR_index_dir} --genomeLoad NoSharedMemory --outTmpDir ${tmpDir} \
     --readFilesIn ${read1[$SLURM_ARRAY_TASK_ID]} ${read2[$SLURM_ARRAY_TASK_ID]} --readFilesCommand "gunzip -c" \
     --outSAMattrRGline ID:"${ID}" PL:ILLUMINA SM:"${sampleID[$SLURM_ARRAY_TASK_ID]}" --outSAMattributes RG \
     --outSAMtype BAM SortedByCoordinate \
-    --sjdbOverhang 100 \
+    --sjdbOverhang 149 \
     --twopassMode Basic \
     --limitBAMsortRAM 52000000000 \
-    --outFileNamePrefix $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/
+    --outFileNamePrefix ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/
