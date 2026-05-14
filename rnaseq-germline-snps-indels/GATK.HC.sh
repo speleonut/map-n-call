@@ -106,7 +106,7 @@ done
 cd $tmpDir
 ${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" HaplotypeCaller \
 -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
--R ${RefDir}/${STARINDEX} \
+-R ${refDir}/${STARINDEX} \
 -L ${Interval_BED} \
 --dbsnp ${GATKREFPATH}/${BUILD}/${DBSNP} \
 --standard-min-confidence-threshold-for-calling 20 \

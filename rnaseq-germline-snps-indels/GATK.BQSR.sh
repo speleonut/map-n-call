@@ -107,7 +107,7 @@ done
 
 # Base quality score recalibration
 $GATKPATH/gatk --java-options "-Xmx28g -Djava.io.tmpdir=$tmpDir" BaseRecalibrator \
--R ${RefDir}/${STARINDEX} \
+-R ${refDir}/${STARINDEX} \
 -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
 --use-original-qualities \
 --known-sites ${GATKREFPATH}/${GATK_BUILD}/${DBSNP} \
