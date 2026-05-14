@@ -55,7 +55,7 @@ echo "# STAR.map.sh.sh a slurm submission script for mapping Illumina paired end
 while [ "$1" != "" ]; do
     case $1 in
         -i )    shift
-                SeqFile=$1
+                seqFile=$1
                 ;;
         -c )    shift
                 Config=$1
@@ -73,7 +73,7 @@ while [ "$1" != "" ]; do
 done
 
 # Check that your script has everything it needs to start.
-if [ -z "${SeqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
+if [ -z "${seqFile}" ]; then #If sequence file list in a text file is not supplied then do not proceed
 	usage
 	echo "# ERROR: You need to specify the path and name of the sequence file list
     # -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"sample-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2 /path/to/optional_SV_file\""
@@ -86,9 +86,9 @@ fi
 source ${Config}
 
 # Define variables for the array jobs
-sampleID=($(awk -F" " '{print $1}' ${SeqFile}))
-read1=($(awk -F" " '{print $2}' ${SeqFile}))
-read2=($(awk -F" " '{print $3}' ${SeqFile}))
+sampleID=($(awk -F" " '{print $1}' ${seqFile}))
+read1=($(awk -F" " '{print $2}' ${seqFile}))
+read2=($(awk -F" " '{print $3}' ${seqFile}))
 read_length=$(zcat ${read1[SLURM_ARRAY_TASK_ID]} | sed -n '2p' | wc -c) # Get the read length from the first read in the first sample, assumes all reads are the same length
 ID=$(cut -f1 ${read1[$SLURM_ARRAY_TASK_ID]} -d"," | zcat - | head -n 1 | awk -F : '{OFS="."; print substr($1, 2, length($1)), $2, $3, $4}').${sampleID[$SLURM_ARRAY_TASK_ID]} # Hopefully unique identifier INSTRUMENT.RUN_ID.FLOWCELL.LANE.DNA_NUMBER. Information extracted from the fastq
 
