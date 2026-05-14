@@ -109,7 +109,7 @@ done
 ## Start of the script ##
  
 $GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir" ApplyBQSR \
-    -R ${GATKREFPATH}/${GATK_BUILD}/${GATKINDEX} \
+    -R ${RefDir}/${STARINDEX} \
     -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
     --bqsr-recal-file $tmpDir/${sampleID[$SLURM_ARRAY_TASK_ID]}.recal.grp \
     --add-output-sam-program-record \ \
