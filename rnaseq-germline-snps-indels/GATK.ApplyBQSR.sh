@@ -112,7 +112,7 @@ $GATKPATH/gatk --java-options "-Xmx6g -Djava.io.tmpdir=$tmpDir" ApplyBQSR \
     -R ${refDir}/${STARINDEX} \
     -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bam \
     --bqsr-recal-file $tmpDir/${sampleID[$SLURM_ARRAY_TASK_ID]}.recal.grp \
-    --add-output-sam-program-record \ \
+    --add-output-sam-program-record \
     --use-original-qualities \
     -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
     >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
