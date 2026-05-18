@@ -108,7 +108,7 @@ ${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" HaplotypeCal
 -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
 -R ${refDir}/${STARINDEX} \
 -L ${Interval_BED} \
---dbsnp ${GATKREFPATH}/${BUILD}/${DBSNP} \
+--dbsnp ${GATKREFPATH}/${GATK_BUILD}/${DBSNP} \
 --standard-min-confidence-threshold-for-calling 20 \
 -dont-use-soft-clipped-bases \
 -O ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.snps.vcf.gz \
