@@ -5,8 +5,8 @@
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
-#SBATCH --time=12:00:00
-#SBATCH --mem=24GB
+#SBATCH --time=04:00:00
+#SBATCH --mem=8GB
 
 # Notification Configuration 
 #SBATCH --mail-type=END                                         
@@ -30,8 +30,8 @@ echo "# A script to call variants on RNAseq data using the GATK v4.x best practi
 #
 # Options
 # -i	REQUIRED. Path and file name of a text file with one sample ID per line.
-# -c	OPTIONAL. /path/to/Config.cfg. A default Config will be used if this is not specified.  The Config contains all of the stuff that used to be set in the top part of our scripts
-# -o	OPTIONAL. Path to where you want to find your file output (if not specified current directory is used)
+# -o	REQUIRED. Path to where you want to find your files.  Each analyses will be put in a subfolder of this output directory using the sampleID.
+# -c	OPTIONAL. Path to a config file for the genome to be mapped. Default is GATK.RNAseq.germline.hg38.phoenix.cfg. 
 # -h or --help	Prints this message.  Or if you got one of the options above wrong you'll be reading this too!
 # 
 # 
@@ -104,7 +104,7 @@ done
 # Note: ${Interval_BED} is set in the GATK4.RNAseq.germline.hg38.phoenix.cfg file.
 
 cd $tmpDir
-${GATKPATH}/gatk --java-options "-Xmx6g -Djava.io.tmpdir=${tmpDir}" HaplotypeCaller \
+${GATKPATH}/gatk --java-options "-Xmx8g -Djava.io.tmpdir=${tmpDir}" HaplotypeCaller \
 -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
 -R ${refDir}/${STARINDEX} \
 -L ${Interval_BED} \

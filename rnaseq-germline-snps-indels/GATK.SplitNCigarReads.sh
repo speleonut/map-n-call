@@ -5,8 +5,8 @@
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1               	                                # number of nodes
 #SBATCH -n 2              	                                # number of cores
-#SBATCH --time=10:00:00    	                                # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=24G         	                                # memory pool for all cores
+#SBATCH --time=06:00:00    	                                # time allocation, which has the format (D-HH:MM)
+#SBATCH --mem=16G         	                                # memory pool for all cores
 
 # Notification configuration 
 #SBATCH --mail-type=END					    # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
@@ -39,10 +39,8 @@ echo "# GATK.SplitNCigarReads.sh a slurm submission script for marking duplicate
 #
 # Options: 
 # -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2 /path/to/optional_SV_file\"
-#                 The optional SV file can be a VCF or a tab-delimited file as specified in the ARRIBA documents: https://arriba.readthedocs.io/en/latest/input-files/#structural-variant-calls-from-wgs
+# -o	REQUIRED. Path to where you want to find your files.  Each analyses will be put in a subfolder of this output directory using the sampleID.
 # -c	OPTIONAL. Path to a config file for the genome to be mapped. Default is GATK.RNAseq.germline.hg38.phoenix.cfg. 
-# -o	OPTIONAL. Path to where you want to find your files, the default is $userDir/RNASeq/arriba/genomeBuild/. 
-#                 Each analyses will be put in a subfolder of this output directory using the sampleID if you use the default, or specifiy the directory yourself.
 # -h | --help     Prints the message you are reading.
 #
 # History: 
@@ -105,7 +103,7 @@ for mod in "${modList[@]}"; do
 done
 
 # Do the thing!
-$GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
+$GATKPATH/gatk --java-options "-Xmx16g -Djava.io.tmpdir=$tmpDir" \
     SplitNCigarReads \
     -R ${refDir}/${STARINDEX} \
     -I ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam \

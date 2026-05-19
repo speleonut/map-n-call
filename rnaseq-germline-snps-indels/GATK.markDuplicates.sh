@@ -5,7 +5,7 @@
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1               	                                # number of nodes
 #SBATCH -n 2              	                                # number of cores
-#SBATCH --time=10:00:00    	                                # time allocation, which has the format (D-HH:MM)
+#SBATCH --time=01:00:00    	                                # time allocation, which has the format (D-HH:MM)
 #SBATCH --mem=24G         	                                # memory pool for all cores
 
 # Notification configuration 
@@ -39,9 +39,8 @@ echo "# GATK.markDuplicates.sh a slurm submission script for marking duplicates 
 #
 # Options: 
 # -i	REQUIRED. Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2\"
+# -o	REQUIRED. Path to where you want to find your files.  Each analyses will be put in a subfolder of this output directory using the sampleID.
 # -c	OPTIONAL. Path to a config file for the genome to be mapped. Default is GATK.RNAseq.germline.hg38.phoenix.cfg. 
-# -o	OPTIONAL. Path to where you want to find your files, the default is $userDir/RNASeq/arriba/genomeBuild/. 
-#                 Each analyses will be put in a subfolder of this output directory using the sampleID if you use the default, or specifiy the directory yourself.
 # -h | --help     Prints the message you are reading.
 #
 # History: 
@@ -110,11 +109,11 @@ if [[ "${readName}" != *":"* ]]; then
 fi
 
 # Do the thing!
-$GATKPATH/gatk --java-options "-Xmx8g -Djava.io.tmpdir=$tmpDir" \
+$GATKPATH/gatk --java-options "-Xmx24g -Djava.io.tmpdir=$tmpDir" \
     MarkDuplicates \
     --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam \
     --OUTPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam  \
     --CREATE_INDEX true \
     --VALIDATION_STRINGENCY SILENT ${readNameRegex}\
     --METRICS_FILE $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.metrics \
-    >> ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1
+    > ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.RNA.germline.pipeline.log 2>&1

@@ -7,6 +7,7 @@ configDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,configs,g'
 utilitiesDir="$(echo ${whereAmI} | sed -e 's,rnaseq-germline-snps-indels,utilities,g')"
 enviroCfg="${configDir}/BWA-GATKHC.environment.cfg"
 source ${enviroCfg}
+noClean="false"
 
 if [ ! -d "${logDir}" ]; then
     mkdir -p ${logDir}
@@ -25,6 +26,7 @@ echo "# This script coordinates the launch of the GATK4 Universal RNAseq Germlin
 #                          Don't mix the two formats in the same file. If you have both, split them into two files and run the pipeline separately for each file.
 # -o             OPTIONAL: Output directory where the results will be stored. This directory will be created if it does not exist.
 # -c             OPTIONAL: Path to the configuration file that contains all necessary parameters for the pipeline.
+# --no-clean     OPTIONAL: Use this option to keep all intermediate files. Default is to delete all files except for the logs and final outputs.
 # -h | --help    OPTIONAL: Display this help message and exit.
 #
 # History: 
@@ -47,9 +49,11 @@ while [ "$1" != "" ]; do
         -c )    shift
                 config=$1
                 ;;
-        -h | --help )    usage
-                         exit 0
-                         ;;
+        --no-clean )    noCLean="true"
+                        ;;
+        -h | --help )   usage
+                        exit 0
+                        ;;
         * )    usage
                exit 1
     esac
@@ -112,12 +116,11 @@ fi
 
 if [ "${bamInput}" = true ]; then
     mkdir -p ${outDir}/sequences
-    touch ${outDir}/sequences/STAR.input.list.txt
     bam2fqJob=`sbatch --array=0-${numTasks} --export=ALL,enviroCfg=${enviroCfg} ${utilitiesDir}/bam2fq.samtools.sh -i ${seqFile} -o ${outDir}/sequences`
     bam2fqJobID=$(echo $bam2fqJob | cut -d" " -f4)
     makeSTARinputJob=`sbatch --dependency=afterok:${bam2fqJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/make.STAR.input.sh ${outDir}/sequences`
     makeSTARinputJobID=$(echo $makeSTARinputJob | cut -d" " -f4)
-    seqFile=${outDir}/sequences/STAR.input.list.txt
+    seqFile=${outDir}/sequences/STAR.input.list.txt # Created by makeSTARinput.sh
     STARmapJob=`sbatch --array=0-${numTasks} --dependency=afterok:${makeSTARinputJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/STAR.map.sh -i ${seqFile} -o ${outDir} -c ${config}`
     STARmapJobID=$(echo $STARmapJob | cut -d" " -f4)
 else
@@ -137,4 +140,7 @@ HCJob=`sbatch --array=0-${numTasks} --dependency=afterok:${applyBQSRJobID} --exp
 HCJobID=$(echo $HCJob | cut -d" " -f4)
 VFJob=`sbatch --array=0-${numTasks} --dependency=afterok:${HCJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.VariantFiltration.sh -i ${seqFile} -o ${outDir} -c ${config}`
 VFJobID=$(echo $VFJob | cut -d" " -f4)
-
+if [ ${noClean} = "false" ]; then
+    cleanJob=`sbatch --array=0-${numTasks} --dependency=afterok:${VFJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/cleanUp.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    cleanJobID=$(echo $cleanJob | cut -d" " -f4)
+fi
