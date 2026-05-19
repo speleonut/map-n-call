@@ -141,6 +141,6 @@ HCJobID=$(echo $HCJob | cut -d" " -f4)
 VFJob=`sbatch --array=0-${numTasks} --dependency=afterok:${HCJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/GATK.VariantFiltration.sh -i ${seqFile} -o ${outDir} -c ${config}`
 VFJobID=$(echo $VFJob | cut -d" " -f4)
 if [ ${noClean} = "false" ]; then
-    cleanJob=`sbatch --array=0-${numTasks} --dependency=afterok:${VFJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/cleanUp.sh -i ${seqFile} -o ${outDir} -c ${config}`
+    cleanJob=`sbatch --array=0-${numTasks} --dependency=afterok:${VFJobID} --export=ALL,enviroCfg=${enviroCfg} ${whereAmI}/clean.up.sh -i ${seqFile} -o ${outDir} -c ${config}`
     cleanJobID=$(echo $cleanJob | cut -d" " -f4)
 fi

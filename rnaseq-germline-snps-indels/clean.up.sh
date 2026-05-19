@@ -88,8 +88,8 @@ source ${Config}
 sampleID=($(awk -F" " '{print $1}' ${seqFile}))
 
 echo "## INFO: Removing the following intermediate files were removed.
-${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${STARINDEX}.recal.split.marked.sort.bai
-${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${STARINDEX}.recal.split.marked.sort.bam
+${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bai
+${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bai
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bai
@@ -99,8 +99,8 @@ ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/_STARgenome
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/_STARpass1"
 
-rm -rf ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${STARINDEX}.recal.split.marked.sort.bai \
-${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${STARINDEX}.recal.split.marked.sort.bam \
+rm -rf ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bai \
+${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam \
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bai \
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam \
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.split.marked.sort.bai \
@@ -108,4 +108,4 @@ ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.sp
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}_tmp \
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam \
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/_STARgenome \
-${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/_STARpass1"
+${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/_STARpass1
