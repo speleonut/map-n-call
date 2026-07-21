@@ -6,7 +6,7 @@
 #SBATCH -N 1               	                                # number of nodes
 #SBATCH -n 2              	                                # number of cores
 #SBATCH --time=01:00:00    	                                # time allocation, which has the format (D-HH:MM)
-#SBATCH --mem=24G         	                                # memory pool for all cores
+#SBATCH --mem=32G         	                                # memory pool for all cores
 
 # Notification configuration 
 #SBATCH --mail-type=END					    # Type of email notifications will be sent (here set to END, which means an email will be sent when the job is done)
@@ -109,7 +109,7 @@ if [[ "${readName}" != *":"* ]]; then
 fi
 
 # Do the thing!
-$GATKPATH/gatk --java-options "-Xmx24g -Djava.io.tmpdir=$tmpDir" \
+$GATKPATH/gatk --java-options "-Xmx28g -Djava.io.tmpdir=$tmpDir" \
     MarkDuplicates \
     --INPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/Aligned.sortedByCoord.out.bam \
     --OUTPUT $outDir/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bam  \
