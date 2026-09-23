@@ -15,15 +15,15 @@ if [ ! -d "${logDir}" ]; then
 fi
 
 usage() {
-echo "# This script coordinates the launch of the GATK4 Universal RNAseq Germline SNPs and Indels pipeline on Phoenix. It requires an output directory and a config file as input. The config file should contain all necessary parameters for the pipeline, including paths to reference genomes, input data, and any specific settings for the GATK tools.
+echo "# This script coordinates the launch of the GATK4 Universal RNAseq Germline SNPs and Indels pipeline on Phoenix. It requires an output directory and a config file as input. The config file should contain all necessary parameters for the pipeline, including paths to reference genomes, input data and any specific settings for the GATK tools.
 # Requirements: RNAseq fastq files or mapped (bam / cram) files.
 #
 # Usage: $0 -i /path/to/input.file.txt -o /path/to/output/directory/ -c /path/to/config/file.cfg | [-h | --help]
 #
 # Options:
 # -i             REQUIRED: Path and file name of a text file with sequences listed in the form \"read-group-ID path/to/read_1-1,...,path/to/read_n-1 /path/to/read_1-2,...,/path/to/read_n-2\"
-#                          OR path to a text file with a list of paths to bam or cram files. Note this is slower to run.
-#                          Don't mix the two formats in the same file. If you have both, split them into two files and run the pipeline separately for each file.
+#                          OR path to a text file with a list of paths to bam or cram files. Note using BAM as input is slower to run.
+#                          Don't mix the two formats in the same file. If you have both, split them into two files and run the pipeline separately for each file format.
 # -o             OPTIONAL: Output directory where the results will be stored. This directory will be created if it does not exist.
 # -c             OPTIONAL: Path to the configuration file that contains all necessary parameters for the pipeline.
 # --no-clean     OPTIONAL: Use this option to keep all intermediate files. Default is to delete all files except for the logs and final outputs.
@@ -32,6 +32,11 @@ echo "# This script coordinates the launch of the GATK4 Universal RNAseq Germlin
 # History: 
 # Script created by: Mark Corbett on 02/03/2026
 # email: mark dot corbett is at adelaide.edu.au
+#
+# Use of AI tools:
+# This script was generated with the assistance of AI tools. The AI was used to help draft the initial version of the script, including the structure and ssome of the comments. The AI was also used to help identify potential issues and suggest improvements. 
+# The final version of the script was reviewed and tested by a meatbag who thinks he knows what he's doing.
+#
 # Modified (Date; Name; Description):
 #
 "
@@ -112,7 +117,7 @@ fi
 # Workflow references:
 # https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl
 
-# Coordinate slum jobs
+# Coordinate slurm jobs
 
 if [ "${bamInput}" = true ]; then
     mkdir -p ${outDir}/sequences

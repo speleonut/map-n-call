@@ -5,7 +5,7 @@
 #SBATCH -p icelake,a100cpu
 #SBATCH -N 1
 #SBATCH -n 2
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mem=8GB
 
 # Notification Configuration 

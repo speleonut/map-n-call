@@ -87,7 +87,7 @@ source ${Config}
 # Define variables for the array jobs
 sampleID=($(awk -F" " '{print $1}' ${seqFile}))
 
-echo "## INFO: Removing the following intermediate files were removed.
+echo "## INFO: The following intermediate files were removed.
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bai
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.${BUILD}.recal.split.marked.sort.bam
 ${outDir}/${sampleID[$SLURM_ARRAY_TASK_ID]}/${sampleID[$SLURM_ARRAY_TASK_ID]}.marked.sort.bai
