@@ -17,7 +17,7 @@ userDir=/hpcfs/users/${USER}
 refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 
 # Script settings
-modList=("SAMtools/1.17-GCC-11.2.0")
+modList=("SAMtools/1.17-GCC-11.2.0" "OpenSSL/1.1nosystem")
 nCores=10
 
 # Script functions

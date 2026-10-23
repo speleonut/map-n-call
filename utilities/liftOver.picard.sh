@@ -17,7 +17,7 @@
 PICARD=/hpcfs/groups/phoenix-hpc-neurogenetics/executables/gatk-latest/GenomeAnalysisTK.jar
 
 
-modList=("Java/17.0.6" "BCFtools/1.17-GCC-11.2.0")
+modList=("Java/17.0.6" "BCFtools/1.17-GCC-11.2.0" "OpenSSL/1.1nosystem")
 usage()
 {
 echo "# liftOver.picard.sh Lift a vcf over from one genome build to another.

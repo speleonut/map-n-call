@@ -18,7 +18,7 @@ refDir="/hpcfs/groups/phoenix-hpc-neurogenetics/RefSeq"
 delBamFile=false
 
 
-modList=("SAMtools/1.17-GCC-11.2.0")
+modList=("SAMtools/1.17-GCC-11.2.0" "OpenSSL/1.1nosystem")
 
 # Script functions
 usage()

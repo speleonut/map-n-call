@@ -23,7 +23,7 @@ fi
 source ${enviroCfg}
 threads=8 # Set one less than n above
 MODULEPATH=${MODULEPATH}:${customModulePath} # To load a compatible samtools. The $customModulePath variable is defined in the environment config file.
-modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0" "SAMtools/1.18-GCC-12.3.0")
+modList=("Java/21.0.2" "Python/3.11.3-GCCcore-12.3.0" "SAMtools/1.18-GCC-12.3.0"  "OpenSSL/1.1nosystem")
 
 usage()
 {
